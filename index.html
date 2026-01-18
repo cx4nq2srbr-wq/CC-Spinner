@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CC Spinner</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CC Spinner">
+  
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <title>CC Spinner</title>
 <style>
 body {
   font-family:"Chalkboard SE","Comic Sans MS",sans-serif;
@@ -561,8 +569,8 @@ const lessonData = {
     24: { p: "What units are used to measure electricity?", a: "ohms (resistance), volts (voltage), amps (current), watts (power)" }
   },
   "English": {
-    1: { p: "8 Parts of Speech", a: "noun, pronoun, verb, adverb, conjunction, interjection, preposition, adjective" },
-    2: { p: "A Pronoun replaces a noun...", a: "A pronoun replaces a noun in order to avoid repetition." },
+    1: { p: "Parts of Speech", a: "noun, pronoun, verb, adverb, conjunction, interjection, preposition, adjective" },
+    2: { p: "A Pronoun", a: "A pronoun replaces a noun in order to avoid repetition." },
     3: { p: "Pronoun Order", a: "1st person singular, 2nd person singular, 3rd person singular, 1st person plural, 2nd person plural, 3rd person plural" },
     4: { p: "Nominative Pronouns", a: "I, you, he/she/it, we, you, they" },
     5: { p: "Objective Pronouns", a: "me, you, him/her/it, us, you, them" },
@@ -577,7 +585,7 @@ const lessonData = {
     14: { p: "An Adverb", a: "An adverb modifies a verb, adjective, or another adverb—and answers the questions: How? When? Where? and Why?" },
     15: { p: "Four Purposes of Sentences", a: "declarative, exclamatory, interrogative, imperative" },
     16: { p: "A Verb", a: "A verb is a word that asserts an action, shows a state of being, links two words together, or helps another verb." },
-    17: { p: "A Noun names a person, place, thing...", a: "A noun names a person, place, thing, activity, or idea." },
+    17: { p: "A Noun", a: "A noun names a person, place, thing, activity, or idea." },
     18: { p: "Five Cases of Nouns", a: "subject, direct object, indirect object, object of the preposition, possessive" },
     19: { p: "A Gerund", a: "A gerund is a present participle verb form used as a noun." },
     20: { p: "An Appositive", a: "An appositive is a noun or pronoun directly beside another noun that explains or identifies it." },
@@ -964,6 +972,14 @@ function bindHoldButton(id, actionFn){
 }
 bindHoldButton('increaseWeek', increaseWeek);
 bindHoldButton('decreaseWeek', decreaseWeek);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => console.log('Service Worker registered!'))
+      .catch(err => console.log('Service Worker failed:', err));
+  });
+}
 </script>
 </body>
 </html>
