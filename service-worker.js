@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cc-spinner-v1';
+const CACHE_NAME = 'cc-spinner-v1.1'; // Increment this (v1.1, v1.2) to force an update
 const ASSETS = [
   './',
   './index.html',
@@ -6,20 +6,37 @@ const ASSETS = [
   './icon.png'
 ];
 
-// Install the Service Worker and Cache the files
+// 1. Install & Skip Waiting
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
-    })
+    }).then(() => self.skipWaiting()) // Forces the new service worker to take over
   );
 });
 
-// Serve the files from Cache when offline
+// 2. Clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('Service Worker: Clearing Old Cache');
+            return caches.delete(cache);
+          }
+        })
+      );
+    }).then(() => self.clients.claim()) // Immediately control the open pages
+  );
+});
+
+// 3. Network-First Strategy (The Fix)
+// This checks the internet for the new HTML first. If offline, it uses the cache.
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
