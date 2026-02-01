@@ -64,7 +64,7 @@ h1 {
   font-size:18px;
   margin: 10px auto;
   color:#333;
-  min-height: 100px; /* Reserved space for longer answers */
+  min-height: 80px; /* Reserved space for longer answers */
   max-width: 600px;
   display: flex;
   align-items: center;
@@ -426,6 +426,25 @@ th {background:#ffd966;}
   width: 92%;
   max-width: 360px;
 }
+
+.version-tag {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.3); /* Light grey/transparent */
+  font-family: sans-serif;   /* Clean look for technical info */
+  pointer-events: none;      /* Ensures it doesn't interfere with clicks */
+  z-index: 100;              /* Keeps it above the background */
+}
+
+/* Adjust for "Notched" phones (iPhone) */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .version-tag {
+    top: calc(env(safe-area-inset-top) + 5px);
+  }
+}
+
 .confirmText{ text-align:center; font-weight:600; color:#333; }
 .confirmBtn{ padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
 .confirmBtn#confirmYes{ background:#e74c3c; color:#fff }
@@ -458,7 +477,7 @@ th {background:#ffd966;}
 
 <button id="editBtn" onclick="toggleGrid()">Edit Lesson Grid</button>
 
-<p>App Version: <span id="app-version">Loading...</span></p>
+<div class="version-tag">v<span id="app-version">1.0.4</span></div>
 
 <div id="gridOverlay">
   <div id="gridContent">
@@ -1011,19 +1030,19 @@ if ('serviceWorker' in navigator) {
 
 fetch('manifest.json') 
   .then(response => {
-    if (!response.ok) throw new Error("File not found");
+    if (!response.ok) throw new Error("Manifest not found");
     return response.json();
   })
   .then(manifest => {
     const versionElement = document.getElementById('app-version');
     if (versionElement && manifest.version) {
-      versionElement.innerText = `v${manifest.version}`;
+      versionElement.innerText = manifest.version;
     }
   })
   .catch(err => {
-    console.error("Could not load version:", err);
-    // Fallback so it doesn't just say "Loading..." forever
-    document.getElementById('app-version').innerText = "1.0.0 (Manual)";
+    // If GitHub is down or you're offline, show a fallback so it's not "Loading..."
+    console.log("Manifest fetch failed, using fallback.");
+    document.getElementById('app-version').innerText = "not available";
   });
 </script>
 </body>
