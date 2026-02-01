@@ -458,6 +458,8 @@ th {background:#ffd966;}
 
 <button id="editBtn" onclick="toggleGrid()">Edit Lesson Grid</button>
 
+<p>App Version: <span id="app-version">Loading...</span></p>
+
 <div id="gridOverlay">
   <div id="gridContent">
     <div class="gridHeader">
@@ -673,22 +675,22 @@ const lessonData = {
     24: { p: "How many OT prophecies did Jesus fulfill?", a: "Over 100!" }
   },
   "Timeline": {
-    1: { p: "Age of Ancient Empires to Minoans and Mycenaeans", a: "AGE OF ANCIENT EMPIRES (Creation to circa 450 AD), Creation and the Fall, The Flood and the Tower of Babel, Mesopotamia and Sumer, Egyptians, (3000 BC) Indus River Valley Civilization, Minoans and Mycenaeans" },
-    2: { p: "Seven Wonders of the Ancient World to China's Shang Dynasty", a: "Seven Wonders of the Ancient World, Patriarchs of Israel, (2000 BC) Hittites and Canaanites, Kush, Assyrians, Babylonians, China's Shang Dynasty" },
-    3: { p: "Hinduism in India to Israel's United Kingdom", a: "Hinduism in India, Phoenicians and the Alphabet, Olmecs of Mesoamerica, Israelite Exodus and Desert Wandering, Israelite Conquest and Judges, Greek Dark Ages, Israel's United Kingdom" },
-    4: { p: "Early Native Americans to Lao-Tzu, Confucius, Buddha", a: "(1000 BC) Early Native Americans, Israel Divides into Two Kingdoms, Homer and Hesiod, Rome Founded by Romulus and Remus, Israel Falls to Assyria, Assyria Falls to Babylon, Lao-Tzu, Confucius, Buddha" },
-    5: { p: "Judah Falls to Babylon to Persia Falls to Alexander the Great", a: "Judah Falls to Babylon, Temple Destroyed, Babylon Falls to Persia, Jews Return and Rebuild the Temple, Roman Republic, Golden Age of Greece, Peloponnesian Wars, Persia Falls to Alexander the Great" },
-    6: { p: "India's Mauryan Empire to John the Baptist", a: "India's Mauryan Empire, Mayans of Mesoamerica, Punic Wars, Rome Conquers Greece, Roman Dictator Julius Caesar, Caesar Augustus and the Pax Romana, John the Baptist" },
-    7: { p: "Jesus the Messiah to India's Gupta Dynasty", a: "Jesus the Messiah, (Year 1 AD) Pentecost and the Early Church, Persecution Spreads the Gospel, Herod's Temple Destroyed by Titus, Diocletian Divides the Roman Empire, Constantine Legalizes Christianity, India's Gupta Dynasty" },
-    8: { p: "Council of Nicea to Western Roman Empire Falls to Barbarians", a: "Council of Nicea, Augustine of Hippo, Jerome Completes the Vulgate, Visigoths Sack Rome, THE MIDDLE AGES (circa 450-1500) Council of Chalcedon, Western Roman Empire Falls to Barbarians" },
-    9: { p: "Byzantine Emperor Justinian to Vikings Raid and Trade", a: "(500 AD) Byzantine Emperor Justinian, Benedict and Monasticism, Muhammad Founds Islam, Zanj and Early Ghana, Franks Defeat Muslims at the Battle of Tours, Golden Age of Islam, Vikings Raid and Trade" },
-    10: { p: "Japan's Heian Period to East-West Schism of the Church", a: "Japan's Heian Period, Charlemagne Crowned Emperor of Europe, Alfred the Great, Erik the Red and Leif Eriksson, Vladimir I of Kiev, Byzantine Emperor Basil II, (1000 AD)East-West Schism of the Church" },
-    11: { p: "Norman Conquest and Feudalism in Europe to Incas of South America", a: "Norman Conquest and Feudalism in Europe, The Crusades, Zimbabwe and Early Mali in Africa, Aztecs of Mesoamerica, Francis of Assisi and Thomas Aquinas, Japan's Shoguns, Incas of South America" },
-    12: { p: "Genghis Khan Rules the Mongols to China's Ming Dynasty", a: "Genghis Khan Rules the Mongols, England's Magna Carta, Ottoman Empire, Marco Polo's Journey to China, The Hundred Years' War and Black Death, The Renaissance, China's Ming Dynasty" },
-    13: { p: "Age of Exploration to The Spanish Inquisition", a: "AGE OF EXPLORATION (c. 1400-1600), Prince Henry Founds School of Navigation, Slave Trade in Africa, Gutenberg's Printing Press, Songhai in Africa, Czar Ivan the Great of Russia, The Spanish Inquisition" },
-    14: { p: "Columbus Sails to the Caribbean to Baroque Period of the Arts", a: "Columbus Sails to the Caribbean, (1500 AD) AGE OF ABSOLUTE MONARCHS (c. 1500-1800), Protestant Reformation, Spanish Conquistadors in the Americas, Calvin's $Institutes of the Christian Religion$, Council of Trent, Baroque Period of the Arts" },
-    15: { p: "Japan's Isolation to The Seven Years' War", a: "Japan's Isolation, Jamestown and Plymouth Colony Founded, AGE OF ENLIGHTENMENT (c. 1650-1800), Hudson's Bay Company, First Great Awakening, Classical Period of the Arts, The Seven Years' War" },
-    16: { p: "Age of Industry to Louisiana Purchase and Lewis and Clark Expidition", a: "AGE OF INDUSTRY (c. 1760-1969), James Cook Sails to Australia, American Revolution and General George Washington, Madison's Constitution and the Bill of Rights, French Revolution, Second Great Awakening, Louisiana Purchase and Lewis and Clark Expedition" },
+    1: { p: "Age of Ancient Empires - Minoans and Mycenaeans", a: "AGE OF ANCIENT EMPIRES (Creation to circa 450 AD), Creation and the Fall, The Flood and the Tower of Babel, Mesopotamia and Sumer, Egyptians, (3000 BC) Indus River Valley Civilization, Minoans and Mycenaeans" },
+    2: { p: "Seven Wonders of the Ancient World - China's Shang Dynasty", a: "Seven Wonders of the Ancient World, Patriarchs of Israel, (2000 BC) Hittites and Canaanites, Kush, Assyrians, Babylonians, China's Shang Dynasty" },
+    3: { p: "Hinduism in India - Israel's United Kingdom", a: "Hinduism in India, Phoenicians and the Alphabet, Olmecs of Mesoamerica, Israelite Exodus and Desert Wandering, Israelite Conquest and Judges, Greek Dark Ages, Israel's United Kingdom" },
+    4: { p: "Early Native Americans - Lao-Tzu, Confucius, Buddha", a: "(1000 BC) Early Native Americans, Israel Divides into Two Kingdoms, Homer and Hesiod, Rome Founded by Romulus and Remus, Israel Falls to Assyria, Assyria Falls to Babylon, Lao-Tzu, Confucius, Buddha" },
+    5: { p: "Judah Falls to Babylon - Persia Falls to Alexander the Great", a: "Judah Falls to Babylon, Temple Destroyed, Babylon Falls to Persia, Jews Return and Rebuild the Temple, Roman Republic, Golden Age of Greece, Peloponnesian Wars, Persia Falls to Alexander the Great" },
+    6: { p: "India's Mauryan Empire - John the Baptist", a: "India's Mauryan Empire, Mayans of Mesoamerica, Punic Wars, Rome Conquers Greece, Roman Dictator Julius Caesar, Caesar Augustus and the Pax Romana, John the Baptist" },
+    7: { p: "Jesus the Messiah - India's Gupta Dynasty", a: "Jesus the Messiah, (Year 1 AD) Pentecost and the Early Church, Persecution Spreads the Gospel, Herod's Temple Destroyed by Titus, Diocletian Divides the Roman Empire, Constantine Legalizes Christianity, India's Gupta Dynasty" },
+    8: { p: "Council of Nicea - Western Roman Empire Falls to Barbarians", a: "Council of Nicea, Augustine of Hippo, Jerome Completes the Vulgate, Visigoths Sack Rome, THE MIDDLE AGES (circa 450-1500) Council of Chalcedon, Western Roman Empire Falls to Barbarians" },
+    9: { p: "Byzantine Emperor Justinian - Vikings Raid and Trade", a: "(500 AD) Byzantine Emperor Justinian, Benedict and Monasticism, Muhammad Founds Islam, Zanj and Early Ghana, Franks Defeat Muslims at the Battle of Tours, Golden Age of Islam, Vikings Raid and Trade" },
+    10: { p: "Japan's Heian Period - East-West Schism of the Church", a: "Japan's Heian Period, Charlemagne Crowned Emperor of Europe, Alfred the Great, Erik the Red and Leif Eriksson, Vladimir I of Kiev, Byzantine Emperor Basil II, (1000 AD)East-West Schism of the Church" },
+    11: { p: "Norman Conquest and Feudalism in Europe - Incas of South America", a: "Norman Conquest and Feudalism in Europe, The Crusades, Zimbabwe and Early Mali in Africa, Aztecs of Mesoamerica, Francis of Assisi and Thomas Aquinas, Japan's Shoguns, Incas of South America" },
+    12: { p: "Genghis Khan Rules the Mongols - China's Ming Dynasty", a: "Genghis Khan Rules the Mongols, England's Magna Carta, Ottoman Empire, Marco Polo's Journey to China, The Hundred Years' War and Black Death, The Renaissance, China's Ming Dynasty" },
+    13: { p: "Age of Exploration - The Spanish Inquisition", a: "AGE OF EXPLORATION (c. 1400-1600), Prince Henry Founds School of Navigation, Slave Trade in Africa, Gutenberg's Printing Press, Songhai in Africa, Czar Ivan the Great of Russia, The Spanish Inquisition" },
+    14: { p: "Columbus Sails to the Caribbean - Baroque Period of the Arts", a: "Columbus Sails to the Caribbean, (1500 AD) AGE OF ABSOLUTE MONARCHS (c. 1500-1800), Protestant Reformation, Spanish Conquistadors in the Americas, Calvin's $Institutes of the Christian Religion$, Council of Trent, Baroque Period of the Arts" },
+    15: { p: "Japan's Isolation - The Seven Years' War", a: "Japan's Isolation, Jamestown and Plymouth Colony Founded, AGE OF ENLIGHTENMENT (c. 1650-1800), Hudson's Bay Company, First Great Awakening, Classical Period of the Arts, The Seven Years' War" },
+    16: { p: "Age of Industry - Louisiana Purchase and Lewis and Clark Expidition", a: "AGE OF INDUSTRY (c. 1760-1969), James Cook Sails to Australia, American Revolution and General George Washington, Madison's Constitution and the Bill of Rights, French Revolution, Second Great Awakening, Louisiana Purchase and Lewis and Clark Expedition" },
     17: { p: "Napoleon to Romantic Period of the Arts", a: "Napoleon Crowned Emperor of France, Liberation of South America, The War of 1812, The Missouri Compromise, Immigrants Flock to America, The Monroe Doctrine, Romantic Period of the Arts" },
     18: { p: "Cherokee Trail of Tears to Darwin Publishes $The Origin of Species$", a: "Cherokee Trail of Tears, U.S. Westward Expansion, Marx Publishes The Communist Manifesto, The Compromise of 1850 and Dred Scott Decision, U.S. Restores Trade with Japan, British Queen Victoria's Rule Over India, Darwin Publishes The Origin of Species" },
     19: { p: "Lincoln's War Between the States to The Progressive Era", a: "Lincoln's War Between the States, Reconstruction of the Southen States, Dominion of Canada, Otto von Bismarck Unifies Germany, Boer Wars in Africa, The Spanish-American War, The Progressive Era" },
@@ -980,6 +982,49 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('Service Worker failed:', err));
   });
 }
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').then(reg => {
+      // Check for updates every time the app is opened
+      reg.update(); 
+    });
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // This fires when the new version is ready. 
+          // You can show a "New Update Available" toast or just auto-reload.
+          if (confirm("New version available! Update now?")) {
+            window.location.reload();
+          }
+        }
+      });
+    });
+  });
+}
+
+fetch('manifest.json') 
+  .then(response => {
+    if (!response.ok) throw new Error("File not found");
+    return response.json();
+  })
+  .then(manifest => {
+    const versionElement = document.getElementById('app-version');
+    if (versionElement && manifest.version) {
+      versionElement.innerText = `v${manifest.version}`;
+    }
+  })
+  .catch(err => {
+    console.error("Could not load version:", err);
+    // Fallback so it doesn't just say "Loading..." forever
+    document.getElementById('app-version').innerText = "1.0.0 (Manual)";
+  });
 </script>
 </body>
 </html>
