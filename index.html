@@ -143,32 +143,33 @@ h1 {
 }
 
 #grid th.subjectHeader {
-  height: 100px; /* Consistent height */
+  height: 100px;
   background: #ffd966;
   padding: 0;
+  margin: 0;
   vertical-align: middle;
-  position: relative;
+  text-align: center;
+  overflow: hidden;
 }
 
 #grid th.subjectHeader span {
-  /* This creates a flex container to perfectly center the text before rotating */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  /* Rotate from the center of the word */
+  transform: rotate(-90deg); 
   
-  /* The Secret: Position it absolutely so it doesn't push the cell boundaries */
-  position: absolute;
-  bottom: 10px; /* Distance from the bottom of the cell */
-  left: 50%;
-  transform: translateX(-50%) rotate(-90deg);
-  transform-origin: center center;
-  
-  width: 100px; /* Matches height of cell */
+  /* This prevents the word from pushing the row height and pulls it 
+     back up into the center of the orange cell */
   white-space: nowrap;
+  line-height: 1;
+  width: 20px; 
+  
+  /* Font Tweaks */
   font-weight: 700;
-  font-size: 11px;
+  font-size: 13px;
   color: #000;
-  text-align: center;
+  
+  /* Force it to stay inside the cell boundaries */
+  pointer-events: none;
 }
   
 #resetConfirmOverlay {
