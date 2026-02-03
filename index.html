@@ -143,29 +143,32 @@ h1 {
 }
 
 #grid th.subjectHeader {
-  height: 110px; /* Increased slightly from 96px for "Geography" safety */
+  height: 100px; /* Consistent height */
   background: #ffd966;
+  padding: 0;
+  vertical-align: middle;
   position: relative;
-  vertical-align: bottom; /* Anchor content to the bottom */
-  padding-bottom: 5px;   /* Small gap so letters don't touch the line */
 }
 
 #grid th.subjectHeader span {
-  display: block;
-  /* Rotate from the center-bottom */
-  transform: rotate(-90deg) translateX(0); 
+  /* This creates a flex container to perfectly center the text before rotating */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* The Secret: Position it absolutely so it doesn't push the cell boundaries */
+  position: absolute;
+  bottom: 10px; /* Distance from the bottom of the cell */
+  left: 50%;
+  transform: translateX(-50%) rotate(-90deg);
   transform-origin: center center;
   
+  width: 100px; /* Matches height of cell */
   white-space: nowrap;
   font-weight: 700;
-  font-size: 11px; /* Slightly smaller to ensure "Geography" fits */
+  font-size: 11px;
   color: #000;
-  
-  /* Positioning logic */
-  width: 100px; /* Give it a fixed 'track' to rotate in */
-  margin: 0 auto;
-  position: relative;
-  top: 15px; /* Push the word down closer to the bottom of the cell */
+  text-align: center;
 }
   
 #resetConfirmOverlay {
