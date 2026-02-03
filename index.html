@@ -14,6 +14,125 @@
 
   <title>CC Spinner</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap');
+
+:root {
+  --primary: #ff6f61;
+  --primary-dark: #d9534f;
+  --secondary: #4a90e2;
+  --bg: #f8fafc;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --radius: 24px;
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Locks the screen */
+  touch-action: none;
+}
+
+body {
+  font-family: 'Quicksand', sans-serif;
+  letter-spacing: -0.01em;
+  background: radial-gradient(circle at top, #f0f7ff, #e2e8f0);
+  background-attachment: fixed;
+  color: var(--text-main);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  /* Top padding for safe area, bottom padding to clear the edit bar */
+  padding: env(safe-area-inset-top, 20px) 15px calc(80px + env(safe-area-inset-bottom, 0px)) 15px;
+}
+
+/* --- THE DISPLAY CARDS --- */
+#result, #prompt, #answer, .slot {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: var(--shadow);
+}
+
+.rollerBox { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
+.slot { width: 140px; height: 70px; border: 3px solid #fff; position: relative; overflow: hidden; }
+.slot::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(rgba(255,255,255,0.5), transparent); pointer-events: none;
+}
+.reel div { height: 70px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: var(--text-main); }
+
+#result {
+  font-size: 20px; font-weight: 700; margin: 5px auto; color: var(--secondary);
+  min-height: 35px; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 500px;
+}
+
+#prompt {
+  font-size: 18px; font-weight: 600; margin: 5px auto; padding: 10px;
+  min-height: 40px; max-width: 600px; display: flex; align-items: center; justify-content: center;
+}
+
+#answer {
+  flex: 1; /* Stretches to fill available space */
+  font-size: 17px; margin: 5px auto; padding: 12px; color: var(--text-muted);
+  background: rgba(255,255,255,0.4); border: 1px dashed rgba(0,0,0,0.1);
+  max-width: 600px; width: 100%; display: flex; align-items: center; justify-content: center;
+  visibility: hidden; overflow-y: auto;
+}
+
+/* --- BUTTONS --- */
+#spinBtnContainer { margin: 10px 0; }
+#spinBtn {
+  background: var(--primary); border: none; border-bottom: 5px solid var(--primary-dark);
+  border-radius: 50px; padding: 16px 40px; font-size: 20px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 1px; color: #fff; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255, 111, 97, 0.3); transition: all 0.1s ease;
+}
+#spinBtn:active { transform: translateY(4px); border-bottom-width: 1px; }
+
+#toggleAnswer {
+  display: block; width: 90%; max-width: 400px; margin: 8px auto; padding: 14px;
+  font-family: inherit; font-size: 16px; font-weight: 800; text-transform: uppercase;
+  background: #fff; color: var(--secondary); border: 3px dashed var(--secondary);
+  border-radius: 18px; cursor: pointer; transition: all 0.2s ease;
+}
+#toggleAnswer:active { transform: scale(0.96); background: var(--secondary); color: #fff; }
+
+#editBtn {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--secondary); border: none; border-top: 1px solid rgba(0,0,0,0.1);
+  padding: 15px 0; font-weight: 700; font-size: 16px; z-index: 500;
+  padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+}
+
+/* --- GRID UI (Remains standard) --- */
+#gridOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1000; }
+#gridContent { width: 100vw; height: 100%; display: flex; flex-direction: column; background: #fff; overflow: hidden; padding-top: env(safe-area-inset-top, 44px); }
+.gridHeader { display: flex; align-items: center; padding: 12px 20px; background: #fff; border-bottom: 2px solid #eee; }
+.gridHeader h2 { flex: 1; text-align: center; margin: 0; font-size: 1.4rem; }
+.closeGridBtn { font-size: 1.8rem; color: #fff; background: #4a90e2; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: none; }
+#grid { padding: 10px; overflow-y: auto; flex: 1; }
+#grid table { width: 100%; border-collapse: collapse; }
+#grid th, #grid td { border: 1px solid #aaa; text-align: center; height: 35px; }
+#grid th.subjectHeader { height: 100px; background: #ffd966; }
+#grid th.subjectHeader span { display: inline-block; transform: rotate(-90deg) translateX(-30px); white-space: nowrap; font-weight: 700; font-size: 12px; width: 20px; }
+.weekNumber { width: 100%; height: 100%; border: none; background: #fff; font-weight: 700; }
+.weekNumber.active { background: #22c55e; color: #fff; }
+.completed { background: #ccc !important; }
+
+#resetConfirmOverlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 3000; }
+#resetConfirmOverlay .confirmBox { background: #fff; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; }
+.version-tag { position: absolute; top: env(safe-area-inset-top, 10px); right: 15px; font-size: 10px; color: var(--text-muted); opacity: 0.5; }
+</style>
+</head>
+<body>
 <div class="rollerBox">
   <div class="slot">
     <div class="reel" id="subjectReel"></div>
@@ -60,56 +179,6 @@
   </div>
 </div>
   
-</style>
-</head>
-<body>
-
-<div id="spinBtnContainer">
-  <button id="spinBtn" onclick="spinBoth()">Spin Lesson</button>
-</div>
-
-<div class="rollerBox">
-  <div class="slot">
-    <div class="reel" id="subjectReel"></div>
-  </div>
-  <div class="slot">
-    <div class="reel" id="weekReel"></div>
-  </div>
-</div>
-
-<div id="prompt"></div>
-
-<button id="toggleAnswer" onclick="toggleAnswer()">▼ Show Answer ▼</button>
-
-<div id="answer"></div>
-
-<button id="editBtn" onclick="toggleGrid()">Edit Lesson Grid</button>
-
-<div class="version-tag">v<span id="app-version">1.0.4</span></div>
-
-<div id="gridOverlay">
-  <div id="gridContent">
-    <div class="gridHeader">
-      <button class="closeGridBtn" onclick="toggleGrid()">←</button>
-      <h2>Lesson Grid</h2>
-    </div>
-    <div class="gridControls" style="display: flex; justify-content: space-between; align-items: center;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div>Max Week:</div>
-        <div class="maxWeekControl">
-          <button class="maxWeekBtn" id="decreaseWeek">−</button>
-          <div id="maxWeekDisplay">24</div>
-          <button class="maxWeekBtn" id="increaseWeek">+</button>
-        </div>
-      </div>
-      <button onclick="resetGrid()" style="background: #eee; color: #666; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; border-radius: 5px;">
-        Reset Progress
-      </button>
-    </div>
-    <div id="grid"></div>
-  </div>
-</div>
-
 <script>
 // Logic remains largely the same, but we update visibility instead of display
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
