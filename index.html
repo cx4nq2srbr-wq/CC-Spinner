@@ -97,7 +97,42 @@ h1 {
 #spinBtn:active { transform: translateY(4px); border-bottom-width: 1px; }
 #spinBtn:disabled { background: #cbd5e1; border-bottom-color: #94a3b8; box-shadow: none; opacity: 0.7; }
 
-#toggleAnswer, #editBtn {
+#editBtn {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  
+  /* Styling to make it look like a nav bar */
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--secondary);
+  
+  border: none;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  border-radius: 0; /* Flat against the bottom */
+  
+  padding: 15px 0;
+  margin: 0;
+  width: 100%;
+  font-weight: 700;
+  font-size: 16px;
+  
+  /* Keep it above everything else */
+  z-index: 500;
+  
+  /* Support for iPhone "Home Bar" spacing */
+  padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+  cursor: pointer;
+}
+
+/* Add some padding to the body so the button doesn't cover content at the very bottom */
+body {
+  padding-bottom: 80px; 
+}
+  
+#toggleAnswer {
   background: #fff; color: var(--text-muted); border: 1px solid #e2e8f0;
   border-radius: 12px; padding: 12px 24px; font-weight: 700; font-family: inherit; margin-top: 10px;
 }
