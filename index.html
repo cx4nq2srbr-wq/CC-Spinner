@@ -136,14 +136,7 @@ h1 {
 #grid table {
   table-layout: fixed; width: 100%; border-collapse: collapse; background: white;
 }
-  
-/* Make the header row stay at the top */
-#grid thead th {
-  position: sticky;
-  top: 0;
-  z-index: 10; /* Ensures it stays above the scrolling week numbers */
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Adds a shadow so it looks like it's floating over the rows */
-  
+
 #grid th, #grid td {
   border: 1px solid #aaa; padding: 0; height: 40px; text-align: center;
   white-space: nowrap; font-size: 14px;
@@ -151,20 +144,14 @@ h1 {
 
 #grid th.subjectHeader {
   height: 100px;
-  background: #ffd966 !important;
+  background: #ffd966;
   padding: 0;
   margin: 0;
   vertical-align: middle;
   text-align: center;
   overflow: hidden;
 }
-  
-/* We also need to stick the empty corner cell above the week numbers */
-#grid thead th:first-child {
-  background: #fff;
-  z-index: 11;
-}
-  
+
 #grid th.subjectHeader span {
   display: inline-block;
   /* Rotate from the center of the word */
@@ -723,9 +710,9 @@ function buildGrid(){
   let html = "<table><colgroup>";
   html += `<col style="width:${weekColWidth}px">`;
   subjects.forEach(() => { html += `<col style="width:${subjectWidth}px">`; });
-  html += '</colgroup><thead><tr><th></th>';
+  html += '</colgroup><tr><th></th>';
   subjects.forEach(s => { html += `<th class="subjectHeader" onclick="toggleSubject('${s}')"><span>${s}</span></th>`; });
-  html += '</tr></thead><tbody>';
+  html += '</tr>';
 
   weeks.forEach(w => {
     const isAllowed = allowedWeeks.includes(w);
@@ -740,7 +727,6 @@ function buildGrid(){
     });
     html += '</tr>';
   });
-  html += '</tbody></table>';
   document.getElementById('grid').innerHTML = html + '</table>';
   bindWeekHeaderHandlers();
 }
