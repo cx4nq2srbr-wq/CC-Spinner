@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="theme-color" content="#f0f7ff">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   
@@ -133,8 +134,17 @@ body {
 }
   
 #toggleAnswer {
-  background: #fff; color: var(--text-muted); border: 1px solid #e2e8f0;
-  border-radius: 12px; padding: 12px 24px; font-weight: 700; font-family: inherit; margin-top: 10px;
+  background: #f1f5f9;
+  color: var(--secondary);
+  border: 2px dashed var(--secondary);
+  border-radius: 15px;
+  font-weight: 800;
+  transition: all 0.2s ease;
+}
+
+#toggleAnswer:active {
+  background: var(--secondary);
+  color: white;
 }
 
 /* --- GRID OVERLAY (RESTORED TO ORIGINAL BEHAVIOR) --- */
@@ -311,6 +321,10 @@ body {
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let isSpinning = false;
 const subjects = ["Bible", "English", "Geography", "History", "Latin", "Math", "Science", "Timeline"];
+const subjectIcons = {
+  "Bible": "📜", "English": "📖", "Geography": "🌍", "History": "⚔️",
+  "Latin": "🏛️", "Math": "🔢", "Science": "🧪", "Timeline": "⏳"
+};
 const weeks = Array.from({length: 24}, (_, i) => i + 1);
 
 /* ... [Lesson Data remains identical to your original code] ... */
@@ -592,7 +606,7 @@ function spinReel(reelId, items, finalValue, duration = 2400) {
   sequence.push(finalValue);
   sequence.forEach(text => {
     const div = document.createElement("div");
-    div.textContent = text;
+    div.textContent = subjectIcons[text] ? `${subjectIcons[text]} ${text}` : text;
     reel.appendChild(div);
   });
 
@@ -809,7 +823,11 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('Service Worker failed:', err));
   });
 }
-
+  
+if (navigator.vibrate) {
+  navigator.vibrate(40); // A tiny "thump"
+}
+  
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js').then(reg => {
