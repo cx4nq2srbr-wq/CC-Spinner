@@ -143,14 +143,50 @@ h1 {
 }
 
 #grid th.subjectHeader {
-  height: 96px; background: #ffd966; position: relative; vertical-align: middle;
+  height: 110px; /* Increased slightly from 96px for "Geography" safety */
+  background: #ffd966;
+  position: relative;
+  vertical-align: bottom; /* Anchor content to the bottom */
+  padding-bottom: 5px;   /* Small gap so letters don't touch the line */
 }
 
 #grid th.subjectHeader span {
-  display: block; transform: rotate(-90deg); white-space: nowrap;
-  font-weight: 700; font-size: 12px; color: #000; width: 20px; margin: 0 auto;
+  display: block;
+  /* Rotate from the center-bottom */
+  transform: rotate(-90deg) translateX(0); 
+  transform-origin: center center;
+  
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 11px; /* Slightly smaller to ensure "Geography" fits */
+  color: #000;
+  
+  /* Positioning logic */
+  width: 100px; /* Give it a fixed 'track' to rotate in */
+  margin: 0 auto;
+  position: relative;
+  top: 15px; /* Push the word down closer to the bottom of the cell */
+}
+  
+#resetConfirmOverlay {
+  position: fixed;
+  inset: 0; /* Shorthand for top, bottom, left, right: 0 */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5); /* Slightly darker for better focus */
+  z-index: 3000; /* Higher than the Grid Overlay */
 }
 
+#resetConfirmOverlay .confirmBox {
+  background: #fff;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  width: 85%;
+  max-width: 320px;
+  text-align: center;
+}
 .week-header { background: #cce7ff; width: 56px; }
 
 .weekNumber {
@@ -179,8 +215,7 @@ h1 {
 }
 
 .confirmBox { background: #fff; border-radius: 8px; padding: 20px; text-align: center; }
-  
-</style>
+
 </style>
 </head>
 <body>
@@ -580,7 +615,7 @@ function spinBoth() {
 
   setTimeout(() => {
     playSound(880, 'sine', 0.5, 0.04); 
-
+    if (navigator.vibrate) navigator.vibrate(50); // A short "tap" feel when the lesson lands
     const lesson = lessonData[subject] && lessonData[subject][week];
     if (lesson) {
       promptDiv.textContent = lesson.p;
@@ -633,13 +668,22 @@ function showResetConfirm(){
   if (!el){
     el = document.createElement('div');
     el.id = 'resetConfirmOverlay';
-    el.innerHTML = `<div class="confirmBox"><div class="confirmText">Clear all progress?</div><div style="display:flex; gap:8px; justify-content:center; margin-top:8px;"><button id="confirmYes" class="confirmBtn">Yes</button><button id="confirmNo" class="confirmBtn">No</button></div></div>`;
+    // Using inline styles for quick button fixes to match your theme
+    el.innerHTML = `
+      <div class="confirmBox">
+        <div class="confirmText" style="font-size: 18px; margin-bottom: 20px;">Clear all progress?</div>
+        <div style="display:flex; gap:12px; justify-content:center;">
+          <button id="confirmYes" class="confirmBtn" style="background:#ff6f61; color:white; padding:10px 20px; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Yes, Reset</button>
+          <button id="confirmNo" class="confirmBtn" style="background:#f1f5f9; color:#64748b; padding:10px 20px; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Cancel</button>
+        </div>
+      </div>`;
     document.body.appendChild(el);
     el.querySelector('#confirmYes').addEventListener('click', resetGridConfirmed);
     el.querySelector('#confirmNo').addEventListener('click', hideResetConfirm);
   }
   el.style.display = 'flex';
 }
+  
 function hideResetConfirm(){ document.getElementById('resetConfirmOverlay').style.display = 'none'; }
 
 // --- GRID UI ---
