@@ -14,301 +14,52 @@
 
   <title>CC Spinner</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap');
+<div class="rollerBox">
+  <div class="slot">
+    <div class="reel" id="subjectReel"></div>
+  </div>
+  <div class="slot">
+    <div class="reel" id="weekReel"></div>
+  </div>
+</div>
 
-:root {
-  --primary: #ff6f61;
-  --primary-dark: #d9534f;
-  --secondary: #4a90e2;
-  --bg: #f8fafc;
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --radius: 24px;
-  --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-}
+<div id="result">Spin to begin</div>
+<div id="prompt"></div>
 
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden; /* This locks the screen from scrolling */
-  touch-action: none; /* Prevents "pull-to-refresh" and accidental zooms */
-}
+<div id="spinBtnContainer">
+  <button id="spinBtn" onclick="spinBoth()">Spin Lesson</button>
+</div>
 
-body {
-  font-family: 'Quicksand', sans-serif;
-  background: radial-gradient(circle at top, #f0f7ff, #e2e8f0);
-  background-attachment: fixed;
-  color: var(--text-main);
-  text-align: center;
+<button id="toggleAnswer" onclick="toggleAnswer()">▼ Show Answer ▼</button>
+
+<div id="answer"></div>
+
+<button id="editBtn" onclick="toggleGrid()">Edit Lesson Grid</button>
+<div class="version-tag">v<span id="app-version">1.0.4</span></div>
+
+<div id="gridOverlay">
+  <div id="gridContent">
+    <div class="gridHeader">
+      <button class="closeGridBtn" onclick="toggleGrid()">←</button>
+      <h2>Lesson Grid</h2>
+    </div>
+    <div class="gridControls" style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div>Max Week:</div>
+        <div class="maxWeekControl">
+          <button class="maxWeekBtn" id="decreaseWeek">−</button>
+          <div id="maxWeekDisplay">24</div>
+          <button class="maxWeekBtn" id="increaseWeek">+</button>
+        </div>
+      </div>
+      <button onclick="resetGrid()" style="background: #eee; color: #666; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; border-radius: 5px;">
+        Reset Progress
+      </button>
+    </div>
+    <div id="grid"></div>
+  </div>
+</div>
   
-  /* Create a vertical flex container */
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  padding: env(safe-area-inset-top, 20px) 15px 80px 15px; /* Bottom padding for editBtn */
-}
-
-h1 {
-  font-weight: 800;
-  font-size: 1.8rem;
-  color: var(--text-main);
-  margin: 10px 0 20px;
-}
-
-/* --- THE DISPLAY CARDS --- */
-#result, #prompt, #answer, .slot {
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: var(--shadow);
-}
-
-#result {
-  font-size: 22px; font-weight: 700; margin: 10px auto; color: var(--secondary);
-  min-height: 45px; display: flex; align-items: center; justify-content: center; max-width: 500px;
-}
-
-#prompt {
-  font-size: 19px; font-weight: 600; margin: 15px auto; padding: 15px;
-  min-height: 60px; max-width: 600px; display: flex; align-items: center; justify-content: center;
-}
-
-#answer {
-  /* This tells the answer box to take up all leftover space */
-  flex: 1; 
-  font-size: 17px;
-  margin: 10px auto;
-  padding: 15px;
-  color: var(--text-muted);
-  background: rgba(255,255,255,0.5);
-  border: 1px dashed rgba(0,0,0,0.1);
-  max-width: 600px;
-  width: 90%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  visibility: hidden;
-  overflow-y: auto; /* If the answer is HUGE, only this box scrolls, not the page */
-}
-
-/* Adjustments for tight spacing */
-.rollerBox { margin: 15px 0; }
-#result { margin: 5px auto; }
-
-
-/* --- THE SLOT MACHINE --- */
-.rollerBox { display: flex; justify-content: center; gap: 15px; margin: 25px 0; }
-.slot { width: 150px; height: 80px; overflow: hidden; border: 3px solid #fff; position: relative; }
-.slot::after {
-  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 50%;
-  background: linear-gradient(rgba(255,255,255,0.5), transparent); pointer-events: none;
-}
-.reel div { height: 80px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: var(--text-main); }
-
-/* --- BUTTONS --- */
-#spinBtn {
-  background: var(--primary); border: none; border-bottom: 5px solid var(--primary-dark);
-  border-radius: 50px; padding: 18px 45px; font-size: 22px; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 1px; color: #fff; cursor: pointer;
-  box-shadow: 0 8px 20px rgba(255, 111, 97, 0.3); transition: all 0.1s ease;
-}
-#spinBtn:active { transform: translateY(4px); border-bottom-width: 1px; }
-#spinBtn:disabled { background: #cbd5e1; border-bottom-color: #94a3b8; box-shadow: none; opacity: 0.7; }
-
-#editBtn {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  
-  /* Styling to make it look like a nav bar */
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--secondary);
-  
-  border: none;
-  border-top: 1px solid rgba(0,0,0,0.1);
-  border-radius: 0; /* Flat against the bottom */
-  
-  padding: 15px 0;
-  margin: 0;
-  width: 100%;
-  font-weight: 700;
-  font-size: 16px;
-  
-  /* Keep it above everything else */
-  z-index: 500;
-  
-  /* Support for iPhone "Home Bar" spacing */
-  padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
-  cursor: pointer;
-}
-
-/* Add some padding to the body so the button doesn't cover content at the very bottom */
-body {
-  padding-bottom: 80px; 
-}
-  
-#toggleAnswer {
-  display: block;
-  width: 90%;          /* Wide enough for easy tapping */
-  max-width: 400px;
-  margin: 20px auto;
-  padding: 18px;       /* Tall target for thumbs */
-  
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  
-  background: #fff;
-  color: var(--secondary);
-  border: 3px dashed var(--secondary);
-  border-radius: 18px;
-  
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-#toggleAnswer:active {
-  transform: scale(0.96); /* Visual "press" feedback */
-  background: var(--secondary);
-  color: #fff;
-}
-
-#toggleAnswer:disabled {
-  opacity: 0.3;
-  border-color: #cbd5e1;
-  color: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* --- GRID OVERLAY (RESTORED TO ORIGINAL BEHAVIOR) --- */
-#gridOverlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-  z-index: 1000; justify-content: flex-start; align-items: stretch;
-}
-
-#gridContent {
-  width: 100vw; height: calc(var(--vh, 1vh) * 100);
-  display: flex; flex-direction: column; background: #fff;
-  overflow: hidden; padding-top: env(safe-area-inset-top, 44px);
-}
-
-.gridHeader {
-  display: flex; align-items: center; padding: 12px 20px;
-  background: #fff; border-bottom: 2px solid #eee;
-}
-
-.gridHeader h2 { flex: 1; text-align: center; margin: 0; padding-right: 45px; font-size: 1.4rem; }
-
-.closeGridBtn {
-  font-size: 1.8rem; color: #fff; background: #4a90e2; border-radius: 50%;
-  width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;
-  border: none; cursor: pointer; flex-shrink: 0;
-}
-
-/* --- TABLE FIXES (RESTORING COMPACT LOOK) --- */
-#grid {
-  padding: 12px 6px 32px 6px; overflow-y: auto; overflow-x: hidden;
-  touch-action: pan-y; width: 100%; box-sizing: border-box; flex: 1;
-}
-
-#grid table {
-  table-layout: fixed; width: 100%; border-collapse: collapse; background: white;
-}
-
-#grid th, #grid td {
-  border: 1px solid #aaa; padding: 0; height: 40px; text-align: center;
-  white-space: nowrap; font-size: 14px;
-}
-
-#grid th.subjectHeader {
-  height: 100px;
-  background: #ffd966;
-  padding: 0;
-  margin: 0;
-  vertical-align: middle;
-  text-align: center;
-  overflow: hidden;
-}
-
-#grid th.subjectHeader span {
-  display: inline-block;
-  /* Rotate from the center of the word */
-  transform: rotate(-90deg) translateX(-30px); 
-  
-  /* This prevents the word from pushing the row height and pulls it 
-     back up into the center of the orange cell */
-  white-space: nowrap;
-  line-height: 1;
-  width: 20px; 
-  
-  /* Font Tweaks */
-  font-weight: 700;
-  font-size: 13px;
-  color: #000;
-  
-  /* Force it to stay inside the cell boundaries */
-  pointer-events: none;
-}
-  
-#resetConfirmOverlay {
-  position: fixed;
-  inset: 0; /* Shorthand for top, bottom, left, right: 0 */
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.5); /* Slightly darker for better focus */
-  z-index: 3000; /* Higher than the Grid Overlay */
-}
-
-#resetConfirmOverlay .confirmBox {
-  background: #fff;
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  width: 85%;
-  max-width: 320px;
-  text-align: center;
-}
-.week-header { background: #cce7ff; width: 56px; }
-
-.weekNumber {
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 100%; border: none; background: #fff;
-  font-weight: 700; font-size: 16px; color: #0b2540; cursor: pointer;
-}
-
-.weekNumber.active { background: #22c55e; color: #fff; }
-.completed { background: #ccc !important; color: #666; }
-.override { background: #d4f0d8; }
-.blocked { background: #fdecea; color: #5a2a28; }
-
-.maxWeekControl {
-  display: inline-flex; align-items: center; gap: 8px; background: #fff8d6;
-  padding: 8px 10px; border-radius: 10px; border: 1px solid #f3d08a;
-}
-.maxWeekBtn {
-  width: 34px; height: 34px; background: #ffd37a; border: 1px solid #e6a83a;
-  border-radius: 8px; cursor: pointer; font-size: 18px;
-}
-
-.version-tag {
-  position: absolute; top: env(safe-area-inset-top, 10px);
-  right: 15px; font-size: 10px; color: var(--text-muted); opacity: 0.5;
-}
-
-.confirmBox { background: #fff; border-radius: 8px; padding: 20px; text-align: center; }
-
 </style>
 </head>
 <body>
