@@ -1,3 +1,0 @@
-concurrency:
-  group: ${{ github.workflow }}-pages
-  cancel-in-progress: false
