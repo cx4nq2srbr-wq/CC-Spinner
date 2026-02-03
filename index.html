@@ -134,17 +134,40 @@ body {
 }
   
 #toggleAnswer {
-  background: #f1f5f9;
-  color: var(--secondary);
-  border: 2px dashed var(--secondary);
-  border-radius: 15px;
+  display: block;
+  width: 90%;          /* Wide enough for easy tapping */
+  max-width: 400px;
+  margin: 20px auto;
+  padding: 18px;       /* Tall target for thumbs */
+  
+  font-family: inherit;
+  font-size: 18px;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  
+  background: #fff;
+  color: var(--secondary);
+  border: 3px dashed var(--secondary);
+  border-radius: 18px;
+  
+  cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
 #toggleAnswer:active {
+  transform: scale(0.96); /* Visual "press" feedback */
   background: var(--secondary);
-  color: white;
+  color: #fff;
+}
+
+#toggleAnswer:disabled {
+  opacity: 0.3;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* --- GRID OVERLAY (RESTORED TO ORIGINAL BEHAVIOR) --- */
@@ -632,6 +655,9 @@ function spinReel(reelId, items, finalValue, duration = 2400) {
 }
 
 function spinBoth() {
+  // 1. TACTILE FEEDBACK: Vibrate immediately on touch
+  if (navigator.vibrate) navigator.vibrate(15); 
+
   const spinBtn = document.getElementById("spinBtn");
   const toggleBtn = document.getElementById("toggleAnswer");
   const ansDiv = document.getElementById("answer");
@@ -653,7 +679,7 @@ function spinBoth() {
 
   isSpinning = true;
   spinBtn.disabled = true;
-  toggleBtn.disabled = true; // Lock the answer button
+  toggleBtn.disabled = true;
   toggleBtn.textContent = '▼ Show Answer ▼';
   ansDiv.style.visibility = "hidden";
   ansDiv.textContent = "";
@@ -667,13 +693,16 @@ function spinBoth() {
   spinReel("weekReel", availableWeeks.map(w => "Week " + w), "Week " + week, 2800);
 
   setTimeout(() => {
-    playSound(880, 'sine', 0.5, 0.04); 
-    if (navigator.vibrate) navigator.vibrate(50); // A short "tap" feel when the lesson lands
+    playSound(880, 'sine', 0.5, 0.04); 
+    
+    // 2. SUCCESS FEEDBACK: Double-pulse vibration when result lands
+    if (navigator.vibrate) navigator.vibrate([40, 30, 40]); 
+
     const lesson = lessonData[subject] && lessonData[subject][week];
     if (lesson) {
       promptDiv.textContent = lesson.p;
       ansDiv.textContent = lesson.a;
-      toggleBtn.disabled = false; // Unlock the answer button
+      toggleBtn.disabled = false;
     }
 
     gridState[subject][week] = false;
@@ -686,6 +715,9 @@ function spinBoth() {
 }
 
 function toggleAnswer() {
+  // 3. INTERACTION FEEDBACK: Small vibration when showing answer
+  if (navigator.vibrate) navigator.vibrate(10);
+
   const ansDiv = document.getElementById('answer');
   const btn = document.getElementById('toggleAnswer');
   if (ansDiv.style.visibility === 'hidden') {
