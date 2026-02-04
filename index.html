@@ -386,6 +386,17 @@ body {
 
 <button id="spinBtn" onclick="spinBoth()">Spin</button>
 
+<div id="resetConfirmOverlay">
+  <div class="confirmBox">
+    <h3 style="margin-top:0">Clear Progress?</h3>
+    <p>This will reset all lessons in the grid.</p>
+    <div style="display:flex; gap:12px; justify-content:center;">
+      <button onclick="resetGridConfirmed()" style="background:var(--primary); color:white; border:none; padding:12px 20px; border-radius:12px; font-weight:700; cursor:pointer;">Yes, Reset</button>
+      <button onclick="hideResetConfirm()" style="background:#f1f5f9; color:#64748b; padding:12px 20px; border:none; border-radius:12px; font-weight:700; cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="gridOverlay">
   <div id="gridContent">
     <div class="gridHeader">
@@ -811,29 +822,40 @@ function resetGrid() {
   showResetConfirm(); 
 }
 
-function resetGridConfirmed(){
-  subjects.forEach(s => weeks.forEach(w => { gridState[s][w] = true; }));
+function resetGridConfirmed() {
+  // 1. Stop any active spin and hide the popup immediately
+  isSpinning = false;
+  hideResetConfirm();
+
+  // 2. Reset all internal data
+  subjects.forEach(s => {
+    gridState[s] = {};
+    weeks.forEach(w => gridState[s][w] = true);
+  });
   allowedWeeks = [];
   blockedWeeks = [];
 
+  // 3. Save to phone memory and refresh the visual grid
   saveToDevice();
   buildGrid();
   
+  // 4. Reset the Spin Button to original state
   const spinBtn = document.getElementById("spinBtn");
   spinBtn.textContent = "Spin";
   spinBtn.style.background = "var(--primary)"; 
+  spinBtn.style.fontSize = "18px";
+  spinBtn.disabled = false; // Ensure it's clickable again
   
-  // CLEAR UI
+  // 5. Clear the prompt and close the answer drawer
   document.getElementById('prompt').textContent = "Grid Reset!";
   document.getElementById('answerContent').textContent = ""; 
   
-  // CLOSE THE DRAWER properly
-  document.getElementById('answerContainer').classList.remove('open');
-  document.getElementById('toggleAnswer').textContent = '▼ Show Answer ▼';
-  document.getElementById('toggleAnswer').disabled = true;
+  const answerContainer = document.getElementById('answerContainer');
+  const toggleBtn = document.getElementById('toggleAnswer');
   
-  isSpinning = false;
-  hideResetConfirm();
+  answerContainer.classList.remove('open');
+  toggleBtn.textContent = '▼ Show Answer ▼';
+  toggleBtn.disabled = true;
 }
 
 function showResetConfirm() {
