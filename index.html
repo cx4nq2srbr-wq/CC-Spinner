@@ -115,6 +115,9 @@ h1 {
   justify-content: center;
   visibility: hidden;
   overflow-y: auto; /* If the answer is HUGE, only this box scrolls, not the page */
+  padding: 15px;
+  padding-right: 80px; /* Adds space so text doesn't go under the button */
+  box-sizing: border-box;
 }
 
 /* Adjustments for tight spacing */
@@ -743,11 +746,12 @@ function spinBoth() {
     weeks.some(w => (w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w])
   );
 
-  if (availableSubjects.length === 0) {
-    spinBtn.textContent = "Reset Lessons";
-    spinBtn.style.background = "linear-gradient(45deg, #ff6b6b, #ee5253)";
-    return;
-  }
+if (availableSubjects.length === 0) {
+  spinBtn.textContent = "Reset";
+  spinBtn.style.background = "#64748b"; // A neutral gray when empty
+  spinBtn.style.fontSize = "14px";
+  return;
+}
 
   isSpinning = true;
   spinBtn.disabled = true;
@@ -809,9 +813,13 @@ function resetGridConfirmed(){
   blockedWeeks = [];
   saveToDevice();
   buildGrid();
+  
   const spinBtn = document.getElementById("spinBtn");
-  spinBtn.textContent = "Spin Lesson";
-  spinBtn.style.background = "linear-gradient(45deg, #ffb347, #ffcc33)";
+  // FIX: Match the new circle button style
+  spinBtn.textContent = "Spin";
+  spinBtn.style.background = "var(--primary)"; 
+  spinBtn.style.fontSize = "18px";
+  
   document.getElementById('prompt').textContent = "";
   document.getElementById('answer').textContent = "";
   document.getElementById('answer').style.visibility = "hidden";
