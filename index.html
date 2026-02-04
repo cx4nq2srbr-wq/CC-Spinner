@@ -135,6 +135,7 @@ h1 {
   transition: max-height 0.3s ease, padding 0.3s ease;
   color: var(--text-muted);
   font-size: 17px;
+  white-space: pre-wrap; /* This ensures long text wraps correctly */
   text-align: center;
 }
 
@@ -801,27 +802,24 @@ if (availableSubjects.length === 0) {
     playSound(880, 'sine', 0.5, 0.04); 
     
     // 2. SUCCESS FEEDBACK: Double-pulse vibration when result lands
-    if (navigator.vibrate) navigator.vibrate([40, 30, 40]); 
-
-    const lesson = lessonData[subject] && lessonData[subject][week];
-    if (lesson) {
-      document.getElementById('prompt').textContent = lesson.p;
-      // Target the new Content ID
-      document.getElementById('answerContent').textContent = lesson.a;
-      toggleBtn.disabled = false;
-    }
-
-    // Reset the container state for the new spin
-    document.getElementById('answerContainer').classList.remove('open');
+    if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+    
+    const lesson = lessonData[subject][week];
+    document.getElementById('prompt').textContent = lesson.p;
+    
+    // This targets the new expanding content area
+    const content = document.getElementById('answerContent');
+    content.textContent = lesson.a;
+    
+    toggleBtn.disabled = false;
     toggleBtn.textContent = '▼ Show Answer ▼';
-
+    
     gridState[subject][week] = false;
     saveToDevice();
     buildGrid();
-
-    spinBtn.disabled = false;
     isSpinning = false;
-  }, 3000);
+    spinBtn.disabled = false;
+  }, 2600);
 }
 
 function toggleAnswer() {
