@@ -397,8 +397,6 @@ body {
 </head>
 <body>
 
-</div>
-
 <div class="rollerBox">
   <div class="slot">
     <div class="reel" id="subjectReel"></div>
@@ -419,7 +417,7 @@ body {
 
 <div class="version-tag">v<span id="app-version">1.0.4</span></div>
 
-<button id="spinBtn" onclick="spinBoth()">Spin</button></button>
+<button id="spinBtn" onclick="spinBoth()">Spin</button>
 
 <div id="gridOverlay">
   <div id="gridContent">
@@ -765,7 +763,7 @@ function spinBoth() {
 
   const spinBtn = document.getElementById("spinBtn");
   const toggleBtn = document.getElementById("toggleAnswer");
-  const ansDiv = document.getElementById("answer");
+  const ansDiv = document.getElementById("answerContent");
   const promptDiv = document.getElementById("prompt");
 
   if (spinBtn.textContent === "Reset Lessons") { resetGrid(); return; }
@@ -787,7 +785,7 @@ if (availableSubjects.length === 0) {
   spinBtn.disabled = true;
   toggleBtn.disabled = true;
   toggleBtn.textContent = '▼ Show Answer ▼';
-  ansDiv.style.visibility = "hidden";
+  document.getElementById('answerContainer').classList.remove('open');
   ansDiv.textContent = "";
   promptDiv.textContent = "";
 
@@ -807,9 +805,9 @@ if (availableSubjects.length === 0) {
     const lesson = lessonData[subject][week];
     document.getElementById('prompt').textContent = lesson.p;
     
-    // This targets the new expanding content area
     const content = document.getElementById('answerContent');
     content.textContent = lesson.a;
+    document.getElementById('answerContainer').classList.remove('open');
     
     toggleBtn.disabled = false;
     toggleBtn.textContent = '▼ Show Answer ▼';
