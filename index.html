@@ -14,6 +14,9 @@
 
   <title>CC Spinner</title>
 <style>
+/* ==========================================================================
+   1. FOUNDATION & VARIABLES
+   ========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap');
 
 :root {
@@ -28,12 +31,15 @@
   --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
+/* ==========================================================================
+   2. GLOBAL LAYOUT & BODY
+   ========================================================================== */
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* This locks the screen from scrolling */
-  touch-action: none; /* Prevents "pull-to-refresh" and accidental zooms */
+  overflow: hidden; 
+  touch-action: none;
 }
 
 body {
@@ -42,53 +48,65 @@ body {
   background-attachment: fixed;
   color: var(--text-main);
   text-align: center;
-  
-  /* Create a vertical flex container */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  padding: env(safe-area-inset-top, 20px) 15px 80px 15px; /* Bottom padding for editBtn */
+  padding: env(safe-area-inset-top, 20px) 15px 80px 15px; 
 }
 
 h1 {
   font-weight: 800;
-  font-size: 1.8rem;
-  color: var(--text-main);
-  margin: 10px 0 20px;
+  font-size: 2rem;
+  color: var(--secondary);
+  margin: 10px 0 5px;
+  text-shadow: 1px 1px 0px #fff;
 }
 
-/* --- THE DISPLAY CARDS --- */
+.version-tag {
+  position: absolute; 
+  top: env(safe-area-inset-top, 10px);
+  right: 15px; 
+  font-size: 10px; 
+  color: var(--text-muted); 
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   3. UI COMPONENTS (Prompt & Answer Boxes)
+   ========================================================================== */
+
+/* Common Card Base Style */
 #result, #prompt, #answer, .slot {
   background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   box-shadow: var(--shadow);
+  overflow: hidden;
+  flex-shrink: 0;      
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Prompt Card */
 #prompt {
-  font-size: 19px; 
-  font-weight: 600; 
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+  width: 95%;          
+  max-width: 600px !important; 
+  min-height: 80px; 
   margin: 12px auto; 
   padding: 18px;
-  min-height: 80px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: var(--shadow);
-  width: 95%;          /* Forces it to take up horizontal space */
-  max-width: 600px !important; 
   box-sizing: border-box;
-  flex-shrink: 0;      /* Prevents height squishing */
+  font-size: 19px; 
+  font-weight: 600; 
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  transition: border-color 0.3s ease;
 }
 
-/* --- NEW UNIFIED ANSWER BOX --- */
+/* Unified Answer Container */
 #answerContainer {
   width: 95%;
   max-width: 600px !important;
@@ -98,87 +116,123 @@ h1 {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(74, 144, 226, 0.2);
   box-shadow: var(--shadow);
   overflow: hidden;
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
 
+#answerContainer.open {
+  border: var(--secondary);
+  transform: scale(1.01);
+}
+
 #toggleAnswer {
   width: 100%;
   padding: 18px;
-  background: transparent;
+  background: rgba(74, 144, 226, 0.05);
   color: var(--secondary);
   border: none;
+  border-bottom: 1px solid rgba(74, 144, 226, 0.1);
   font-family: inherit;
   font-size: 16px;
   font-weight: 800;
   text-transform: uppercase;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 #answerContent {
   padding: 0 20px;
-  max-height: 0px; /* Hidden by default */
+  max-height: 0px; 
   overflow-y: auto;
   transition: all 0.3s ease;
   color: var(--text-muted);
   font-size: 17px;
-  white-space: pre-wrap; /* This ensures long text wraps correctly */
+  white-space: pre-wrap; 
   text-align: center;
 }
 
-/* When active, show the content */
 #answerContainer.open #answerContent {
-  max-height: 450px; /* Adjust based on typical answer length */
+  max-height: 450px; 
   padding: 0 20px 20px 20px;
 }
 
-#answerContainer.open {
-  border: 2px solid var(--secondary);
+/* ==========================================================================
+   4. THE SLOT MACHINE
+   ========================================================================== */
+.rollerBox { 
+  display: flex; 
+  justify-content: center; 
+  gap: 15px; 
+  margin: 20px 0; 
 }
 
-/* Adjustments for tight spacing */
-.rollerBox { margin: 15px 0; }
-#result { margin: 5px auto; }
+.slot { 
+  width: 150px; 
+  height: 80px; 
+  border: 3px solid rgba(74, 144, 226, 0.3); 
+  position: relative; 
+}
 
-/* --- THE SLOT MACHINE --- */
-.rollerBox { display: flex; justify-content: center; gap: 15px; margin: 25px 0; }
-.slot { width: 150px; height: 80px; overflow: hidden; border: 3px solid #fff; position: relative; }
 .slot::after {
-  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 50%;
-  background: linear-gradient(rgba(255,255,255,0.5), transparent); pointer-events: none;
+  content: ""; 
+  position: absolute; 
+  top: 0; left: 0; right: 0; height: 100%;
+  background: linear-gradient(rgba(0,0,0,0.05) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.05) 100%); 
+  pointer-events: none;
 }
-.reel div { height: 80px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: var(--text-main); }
 
-/* --- BUTTONS --- */
-/* --- NEW FLOATING SPIN BUTTON --- */
-#spinBtn {
+.reel div { 
+  height: 80px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 20px; 
+  font-weight: 700; 
+  color: var(--text-main);
+  background: linear-gradient(to bottom, #fff, #f0f7ff, #fff);
+}
+
+.reel {
+  display: flex;
+  flex-direction: column;
+  transition: transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95); /* Default spin speed */
+}
+
+/* ==========================================================================
+   5. BUTTONS (Actions)
+   ========================================================================== */
+
+.control-row {
   position: fixed;
-  bottom: 100px; /* Sits above the "Edit Lesson Grid" bar */
+  bottom: 100px;
   right: 20px;
+  display: flex;
+  flex-direction: row; /* Ensures Undo is Left, Spin is Right */
+  align-items: center;
+  gap: 15px;
+  z-index: 600;
+}
+
+#spinBtn {
   width: 85px;
   height: 85px;
-  border-radius: 50%; /* Perfect circle */
-  
+  border-radius: 50%;
   background: var(--primary);
   color: #fff;
   border: none;
   border-bottom: 4px solid var(--primary-dark);
-  
   font-size: 18px;
   font-weight: 800;
   text-transform: uppercase;
-  
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 10px 25px rgba(255, 111, 97, 0.4);
   cursor: pointer;
-  z-index: 600; /* Higher than editBtn */
   transition: all 0.1s ease;
-  padding: 0; /* Clear default button padding */
 }
 
 #spinBtn:active {
@@ -193,47 +247,61 @@ h1 {
   opacity: 0.7;
 }
 
+#undoBtn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: white;
+  color: var(--secondary);
+  border: 2px solid rgba(74, 144, 226, 0.3);
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+  padding: 0 4px 4px 0; /* Slight nudge to center the ⤾ */
+}
+
+#undoBtn:disabled {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(30px) scale(0.5); /* Hide behind spin button */
+}
+
+#undoBtn:not(:disabled):active {
+  transform: scale(0.9);
+  background: #f1f5f9;
+}
+
+/* Bottom Nav / Edit Button */
 #editBtn {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  
-  /* Styling to make it look like a nav bar */
+  bottom: 0; left: 0; right: 0;
   background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: var(--secondary);
-  
   border: none;
   border-top: 1px solid rgba(0,0,0,0.1);
-  border-radius: 0; /* Flat against the bottom */
-  
+  border-radius: 0;
   padding: 15px 0;
-  margin: 0;
   width: 100%;
   font-weight: 700;
   font-size: 16px;
-  
-  /* Keep it above everything else */
   z-index: 500;
-  
-  /* Support for iPhone "Home Bar" spacing */
   padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
   cursor: pointer;
 }
 
-/* Add some padding to the body so the button doesn't cover content at the very bottom */
-body {
-  padding-bottom: 80px; 
-}
-
+/* Toggle Answer States */
+#toggleAnswer:hover { background: rgba(74, 144, 226, 0.1); }
 #toggleAnswer:active {
-  transform: scale(0.96); /* Visual "press" feedback */
+  transform: scale(0.96);
   background: var(--secondary);
   color: #fff;
 }
-
 #toggleAnswer:disabled {
   opacity: 0.3;
   border-color: #cbd5e1;
@@ -242,21 +310,35 @@ body {
   transform: none;
 }
 
-/* --- GRID OVERLAY (RESTORED TO ORIGINAL BEHAVIOR) --- */
+/* ==========================================================================
+   6. GRID OVERLAY & EDITING
+   ========================================================================== */
 #gridOverlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-  z-index: 1000; justify-content: flex-start; align-items: stretch;
+  display: none; 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0,0,0,0.35);
+  z-index: 1000; 
+  justify-content: flex-start; 
+  align-items: stretch;
 }
 
 #gridContent {
-  width: 100vw; height: calc(var(--vh, 1vh) * 100);
-  display: flex; flex-direction: column; background: #fff;
-  overflow: hidden; padding-top: env(safe-area-inset-top, 44px);
+  width: 100vw; 
+  height: calc(var(--vh, 1vh) * 100);
+  display: flex; 
+  flex-direction: column; 
+  background: #fff;
+  overflow: hidden; 
+  padding-top: env(safe-area-inset-top, 44px);
 }
 
 .gridHeader {
-  display: flex; align-items: center; padding: 12px 20px;
-  background: #fff; border-bottom: 2px solid #eee;
+  display: flex; 
+  align-items: center; 
+  padding: 12px 20px;
+  background: #fff; 
+  border-bottom: 2px solid #eee;
 }
 
 .gridHeader h2 { flex: 1; text-align: center; margin: 0; padding-right: 45px; font-size: 1.4rem; }
@@ -267,59 +349,76 @@ body {
   border: none; cursor: pointer; flex-shrink: 0;
 }
 
-/* --- TABLE FIXES (RESTORING COMPACT LOOK) --- */
+/* Table Controls & Layout */
 #grid {
-  padding: 12px 6px 32px 6px; overflow-y: auto; overflow-x: hidden;
-  touch-action: pan-y; width: 100%; box-sizing: border-box; flex: 1;
+  padding: 12px 6px 32px 6px; 
+  overflow-y: auto; 
+  overflow-x: hidden;
+  touch-action: pan-y; 
+  width: 100%; 
+  box-sizing: border-box; 
+  flex: 1;
 }
 
-#grid table {
-  table-layout: fixed; width: 100%; border-collapse: collapse; background: white;
-}
+#grid table { table-layout: fixed; width: 100%; border-collapse: collapse; background: white; }
 
 #grid th, #grid td {
   border: 1px solid #aaa; padding: 0; height: 40px; text-align: center;
   white-space: nowrap; font-size: 14px;
 }
 
+/* Subject Column Header (Rotated Text) */
 #grid th.subjectHeader {
   height: 100px;
   background: #ffd966;
-  padding: 0;
-  margin: 0;
   vertical-align: middle;
-  text-align: center;
-  overflow: hidden;
 }
 
 #grid th.subjectHeader span {
   display: inline-block;
-  /* Rotate from the center of the word */
   transform: rotate(-90deg) translateX(-30px); 
-  
-  /* This prevents the word from pushing the row height and pulls it 
-     back up into the center of the orange cell */
   white-space: nowrap;
   line-height: 1;
   width: 20px; 
-  
-  /* Font Tweaks */
   font-weight: 700;
   font-size: 13px;
   color: #000;
-  
-  /* Force it to stay inside the cell boundaries */
   pointer-events: none;
 }
-  
+
+/* Week Selection States */
+.week-header { background: #cce7ff; width: 56px; }
+.weekNumber {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; border: none; background: #fff;
+  font-weight: 700; font-size: 16px; color: #0b2540; cursor: pointer;
+}
+.weekNumber.active { background: #22c55e; color: #fff; }
+.completed { background: #ccc !important; color: #666; }
+.override { background: #d4f0d8; }
+.blocked { background: #fdecea; color: #5a2a28; }
+
+/* Max Week Controls */
+.maxWeekControl {
+  display: inline-flex; align-items: center; gap: 8px; background: #fff8d6;
+  padding: 8px 10px; border-radius: 10px; border: 1px solid #f3d08a;
+}
+.maxWeekBtn {
+  width: 34px; height: 34px; background: #ffd37a; border: 1px solid #e6a83a;
+  border-radius: 8px; cursor: pointer; font-size: 18px;
+}
+
+/* ==========================================================================
+   7. MODALS & DIALOGS
+   ========================================================================== */
 #resetConfirmOverlay {
   position: fixed;
-  inset: 0; /* Shorthand for top, bottom, left, right: 0 */
+  inset: 0;
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.5); /* Slightly darker for better focus */
-  z-index: 3000; /* Higher than the Grid Overlay */
+  background: rgba(0,0,0,0.5);
+  z-index: 3000;
 }
 
 #resetConfirmOverlay .confirmBox {
@@ -331,34 +430,6 @@ body {
   max-width: 320px;
   text-align: center;
 }
-.week-header { background: #cce7ff; width: 56px; }
-
-.weekNumber {
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 100%; border: none; background: #fff;
-  font-weight: 700; font-size: 16px; color: #0b2540; cursor: pointer;
-}
-
-.weekNumber.active { background: #22c55e; color: #fff; }
-.completed { background: #ccc !important; color: #666; }
-.override { background: #d4f0d8; }
-.blocked { background: #fdecea; color: #5a2a28; }
-
-.maxWeekControl {
-  display: inline-flex; align-items: center; gap: 8px; background: #fff8d6;
-  padding: 8px 10px; border-radius: 10px; border: 1px solid #f3d08a;
-}
-.maxWeekBtn {
-  width: 34px; height: 34px; background: #ffd37a; border: 1px solid #e6a83a;
-  border-radius: 8px; cursor: pointer; font-size: 18px;
-}
-
-.version-tag {
-  position: absolute; top: env(safe-area-inset-top, 10px);
-  right: 15px; font-size: 10px; color: var(--text-muted); opacity: 0.5;
-}
-
-.confirmBox { background: #fff; border-radius: 8px; padding: 20px; text-align: center; }
 
 </style>
 </head>
@@ -384,7 +455,10 @@ body {
 
 <div class="version-tag">v<span id="app-version">1.0.4</span></div>
 
-<button id="spinBtn" onclick="spinBoth()">Spin</button>
+<div class="control-row">
+  <button id="undoBtn" onclick="undoLastSpin()" disabled>⤿</button>
+  <button id="spinBtn" onclick="spinBoth()">Spin</button>
+</div>
 
 <div id="resetConfirmOverlay">
   <div class="confirmBox">
@@ -421,9 +495,14 @@ body {
 </div>
 
 <script>
-// Logic remains largely the same, but we update visibility instead of display
+/* ==========================================================================
+   1. GLOBAL STATE & CONSTANTS
+   ========================================================================== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let isSpinning = false;
+let lastSpun = null; // The one we just spun (the "mistake")
+let previousSpun = null;  // The one BEFORE that (the "rewind destination")
+
 const subjects = ["Bible", "English", "Geography", "History", "Latin", "Math", "Science", "Timeline"];
 const subjectIcons = {
   "Bible": "📜", "English": "📖", "Geography": "🌍", "History": "⚔️",
@@ -431,7 +510,7 @@ const subjectIcons = {
 };
 const weeks = Array.from({length: 24}, (_, i) => i + 1);
 
-/* ... [Lesson Data remains identical to your original code] ... */
+/* --- LESSON DATA --- */
 const lessonData = {
   "Math": {
     1: { p: "1s and 2s", a: "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15; 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30" },
@@ -643,30 +722,21 @@ const lessonData = {
   }
 };
 
-function playSound(frequency, type, duration, volume = 0.1) {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const oscillator = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
-  oscillator.type = type; 
-  oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-  gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + 0.01);
-  gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  oscillator.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + duration);
-}
+/* ==========================================================================
+   2. INITIALIZATION & DATA LOADING
+   ========================================================================== */
 
-// --- DATA LOADING ---
+// --- Persistence Helpers ---
 const savedData = localStorage.getItem('ccSpinnerProgress');
 const savedMaxWeek = localStorage.getItem('ccMaxWeek');
 const savedAllowedWeeks = localStorage.getItem('ccAllowedWeeks');
 const savedBlockedWeeks = localStorage.getItem('ccBlockedWeeks');
+
 let gridState = savedData ? JSON.parse(savedData) : {};
 let allowedWeeks = savedAllowedWeeks ? JSON.parse(savedAllowedWeeks) : [];
 let blockedWeeks = savedBlockedWeeks ? JSON.parse(savedBlockedWeeks) : [];
 
+// Initialize gridState if empty
 if (!savedData) {
   subjects.forEach(s => {
     gridState[s] = {};
@@ -674,13 +744,22 @@ if (!savedData) {
   });
 }
 
+// --- Window Load & App Config ---
 window.onload = function() {
   if (savedMaxWeek) setMaxWeek(parseInt(savedMaxWeek, 10));
   else setMaxWeek(24);
   
-  // Set initial button state
   document.getElementById('toggleAnswer').disabled = true;
   buildGrid();
+  
+  // Initial Vibration Feedback
+  if (navigator.vibrate) navigator.vibrate(40);
+
+  // Sync Version Tag
+  fetch('manifest.json') 
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(m => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = m.version; })
+    .catch(() => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = "not available"; });
 };
 
 function saveToDevice() {
@@ -690,32 +769,126 @@ function saveToDevice() {
   localStorage.setItem('ccBlockedWeeks', JSON.stringify(blockedWeeks));
 }
 
-function getMaxWeek() {
-  const el = document.getElementById("maxWeekDisplay");
-  return Math.max(1, Math.min(24, parseInt(el.textContent, 10) || 24));
+function updateVh() { 
+  document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px'); 
 }
-function setMaxWeek(n) {
-  document.getElementById("maxWeekDisplay").textContent = String(Math.max(1, Math.min(24, Number(n) || 1)));
-}
-function increaseWeek() { setMaxWeek(getMaxWeek() + 1); buildGrid(); }
-function decreaseWeek() { setMaxWeek(getMaxWeek() - 1); buildGrid(); }
+window.addEventListener('resize', updateVh);
+updateVh();
 
-// --- SPIN LOGIC ---
+/* ==========================================================================
+   3. CORE APP LOGIC (Spinning & Toggling)
+   ========================================================================== */
+
+function spinBoth() {
+  const spinBtn = document.getElementById("spinBtn");
+
+  // Handle Reset State
+  if (spinBtn.textContent === "Reset") {
+     showResetConfirm(); 
+     return; 
+  }
+  
+  const toggleBtn = document.getElementById("toggleAnswer");
+  const undoBtn = document.getElementById("undoBtn"); // Get undo btn
+  const ansDiv = document.getElementById("answerContent");
+  const promptDiv = document.getElementById("prompt");
+
+  if (isSpinning) return;
+  if (navigator.vibrate) navigator.vibrate(15); 
+
+  const maxWeekLimit = getMaxWeek();
+  const availableSubjects = subjects.filter(s =>
+    weeks.some(w => (w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w])
+  );
+
+  if (availableSubjects.length === 0) {
+    spinBtn.textContent = "Reset";
+    spinBtn.style.background = "#64748b"; 
+    spinBtn.style.fontSize = "14px";
+    return;
+  }
+
+  // Lock State
+  isSpinning = true;
+  spinBtn.disabled = true;
+  toggleBtn.disabled = true;
+  undoBtn.disabled = true; // Disable undo while spinning
+  
+  toggleBtn.textContent = '▼ Show Answer ▼';
+  document.getElementById('answerContainer').classList.remove('open');
+  ansDiv.textContent = "";
+  promptDiv.textContent = "";
+
+  // 1. Pick the winning subject and week
+  const subject = availableSubjects[Math.floor(Math.random() * availableSubjects.length)];
+  const availableWeeks = weeks.filter(w => ((w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[subject][w]);
+  const week = availableWeeks[Math.floor(Math.random() * availableWeeks.length)];
+
+  // 2. DEFINE THE INDICES (The missing part that was causing the crash)
+  const subIdx = subjects.indexOf(subject);
+  const weekIdx = weeks.indexOf(week);
+
+  // 3. Start Reel Animations
+  spinReel("subjectReel", availableSubjects, subject, 2000);
+  spinReel("weekReel", availableWeeks.map(w => "Week " + w), "Week " + week, 2800);
+
+  // 4. Finalize Spin
+  setTimeout(() => {
+    try {
+      playSound(880, 'sine', 0.5, 0.04); 
+      if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+      
+      const lesson = lessonData[subject][week];
+
+      // Save memory for Undo
+      previousSpun = lastSpun ? { ...lastSpun } : null; 
+
+      lastSpun = {
+        subject: subject,
+        week: week,
+        sIdx: subIdx,   // Now properly defined
+        wIdx: weekIdx,   // Now properly defined
+        prompt: lesson.p,
+        answer: lesson.a
+      };
+
+      // Display results
+      document.getElementById('prompt').textContent = lesson.p;
+      document.getElementById('answerContent').textContent = lesson.a;
+      
+      // Update Grid State
+      gridState[subject][week] = false;
+      
+      saveToDevice();
+      buildGrid();
+      
+    } catch (e) {
+      console.error("Spin Error:", e);
+      document.getElementById('prompt').textContent = "Spinning error. Please try again!";
+    } finally {
+      // Re-enable everything
+      isSpinning = false;
+      spinBtn.disabled = false;
+      toggleBtn.disabled = false;
+      undoBtn.disabled = false; 
+    }
+  }, 2600);
+}
+
 function spinReel(reelId, items, finalValue, duration = 2400) {
   const reel = document.getElementById(reelId);
   reel.innerHTML = "";
-  const spins = 20;
   const sequence = [];
-  for (let i = 0; i < spins; i++) sequence.push(items[Math.floor(Math.random() * items.length)]);
+  for (let i = 0; i < 20; i++) sequence.push(items[Math.floor(Math.random() * items.length)]);
   sequence.push(finalValue);
+  
   sequence.forEach(text => {
     const div = document.createElement("div");
     div.textContent = subjectIcons[text] ? `${subjectIcons[text]} ${text}` : text;
     reel.appendChild(div);
   });
 
-  const itemHeight = 80;
-  const totalMove = (sequence.length - 1) * itemHeight;
+  const totalMove = (sequence.length - 1) * 80;
   let currentTick = 0;
   
   function playNextTick() {
@@ -735,158 +908,110 @@ function spinReel(reelId, items, finalValue, duration = 2400) {
   }, 20);
 }
 
-function spinBoth() {
-  // 1. TACTILE FEEDBACK: Vibrate immediately on touch
-
-  const spinBtn = document.getElementById("spinBtn");
-
-  if (spinBtn.textContent === "Reset") {
-     showResetConfirm(); 
-     return; 
-  }
-  
-  const toggleBtn = document.getElementById("toggleAnswer");
-  const ansDiv = document.getElementById("answerContent");
-  const promptDiv = document.getElementById("prompt");
-
-  if (isSpinning) return;
-  if (navigator.vibrate) navigator.vibrate(15); 
-
-  const maxWeekLimit = getMaxWeek();
-  const availableSubjects = subjects.filter(s =>
-    weeks.some(w => (w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w])
-  );
-
-if (availableSubjects.length === 0) {
-  spinBtn.textContent = "Reset";
-  spinBtn.style.background = "#64748b"; // A neutral gray when empty
-  spinBtn.style.fontSize = "14px";
-  return;
-}
-
-  isSpinning = true;
-  spinBtn.disabled = true;
-  toggleBtn.disabled = true;
-  toggleBtn.textContent = '▼ Show Answer ▼';
-  document.getElementById('answerContainer').classList.remove('open');
-  ansDiv.textContent = "";
-  promptDiv.textContent = "";
-
-  const subject = availableSubjects[Math.floor(Math.random() * availableSubjects.length)];
-  const availableWeeks = weeks.filter(w => ((w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[subject][w]);
-  const week = availableWeeks[Math.floor(Math.random() * availableWeeks.length)];
-
-  spinReel("subjectReel", availableSubjects, subject, 2000);
-  spinReel("weekReel", availableWeeks.map(w => "Week " + w), "Week " + week, 2800);
-
-  setTimeout(() => {
-    playSound(880, 'sine', 0.5, 0.04); 
-    
-    // 2. SUCCESS FEEDBACK: Double-pulse vibration when result lands
-    if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
-    
-    const lesson = lessonData[subject][week];
-    document.getElementById('prompt').textContent = lesson.p;
-    
-    const content = document.getElementById('answerContent');
-    content.textContent = lesson.a;
-    document.getElementById('answerContainer').classList.remove('open');
-    
-    toggleBtn.disabled = false;
-    toggleBtn.textContent = '▼ Show Answer ▼';
-    
-    gridState[subject][week] = false;
-    saveToDevice();
-    buildGrid();
-    isSpinning = false;
-    spinBtn.disabled = false;
-  }, 2600);
-}
-
 function toggleAnswer() {
   if (navigator.vibrate) navigator.vibrate(10);
-  
   const container = document.getElementById('answerContainer');
   const btn = document.getElementById('toggleAnswer');
-  
   container.classList.toggle('open');
-  
-  if (container.classList.contains('open')) {
-    btn.textContent = '▲ Hide Answer ▲';
-  } else {
-    btn.textContent = '▼ Show Answer ▼';
-  }
+  btn.textContent = container.classList.contains('open') ? '▲ Hide Answer ▲' : '▼ Show Answer ▼';
 }
 
-function resetGrid() {
-  showResetConfirm(); 
+function undoLastSpin() {
+    if (!lastSpun) return;
+
+    // 1. Put the "mistake" back on the grid
+    gridState[lastSpun.subject][lastSpun.week] = true;
+
+    // 2. Rewind the UI
+    if (previousSpun) {
+        // We must REBUILD the reels with the standard lists so the index matches the physical divs
+        const subReel = document.getElementById('subjectReel');
+        const weekReel = document.getElementById('weekReel');
+
+        // Re-populate Subject Reel with standard list
+        subReel.innerHTML = "";
+        subjects.forEach(s => {
+            const div = document.createElement("div");
+            div.textContent = `${subjectIcons[s]} ${s}`;
+            subReel.appendChild(div);
+        });
+
+        // Re-populate Week Reel with standard list
+        weekReel.innerHTML = "";
+        weeks.forEach(w => {
+            const div = document.createElement("div");
+            div.textContent = "Week " + w;
+            weekReel.appendChild(div);
+        });
+
+        // Force a tiny reflow so the browser sees the new divs before animating
+        subReel.offsetHeight; 
+
+        // Apply the "Rewind" animation
+        subReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+        weekReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+
+        // Move to the PREVIOUS indices
+        subReel.style.transform = `translateY(-${previousSpun.sIdx * 80}px)`;
+        weekReel.style.transform = `translateY(-${previousSpun.wIdx * 80}px)`;
+
+        // Update Text to previous question
+        document.getElementById('prompt').textContent = previousSpun.prompt;
+        document.getElementById('answerContent').textContent = previousSpun.answer;
+        
+        // Step back the memory
+        lastSpun = { ...previousSpun };
+        previousSpun = null; 
+    } else {
+        // If there was no previous question, just reset to top
+        document.getElementById('subjectReel').style.transform = `translateY(0)`;
+        document.getElementById('weekReel').style.transform = `translateY(0)`;
+        document.getElementById('prompt').textContent = "Spin to start!";
+        document.getElementById('answerContent').textContent = "";
+        lastSpun = null;
+    }
+
+    // 3. Reset UI state
+    document.getElementById('answerContainer').classList.remove('open');
+    document.getElementById('undoBtn').disabled = true;
+    
+    if (navigator.vibrate) navigator.vibrate(40);
+    saveToDevice();
+    buildGrid();
 }
 
-function resetGridConfirmed() {
-  // 1. Stop any active spin and hide the popup immediately
-  isSpinning = false;
-  hideResetConfirm();
+/* ==========================================================================
+   4. AUDIO & HAPTICS HELPERS
+   ========================================================================== */
 
-  // 2. Reset all internal data
-  subjects.forEach(s => {
-    gridState[s] = {};
-    weeks.forEach(w => gridState[s][w] = true);
-  });
-  allowedWeeks = [];
-  blockedWeeks = [];
-
-  // 3. Save to phone memory and refresh the visual grid
-  saveToDevice();
-  buildGrid();
-  
-  // 4. Reset the Spin Button to original state
-  const spinBtn = document.getElementById("spinBtn");
-  spinBtn.textContent = "Spin";
-  spinBtn.style.background = "var(--primary)"; 
-  spinBtn.style.fontSize = "18px";
-  spinBtn.disabled = false; // Ensure it's clickable again
-  
-  // 5. Clear the prompt and close the answer drawer
-  document.getElementById('prompt').textContent = "Grid Reset!";
-  document.getElementById('answerContent').textContent = ""; 
-  
-  const answerContainer = document.getElementById('answerContainer');
-  const toggleBtn = document.getElementById('toggleAnswer');
-  
-  answerContainer.classList.remove('open');
-  toggleBtn.textContent = '▼ Show Answer ▼';
-  toggleBtn.disabled = true;
+function playSound(frequency, type, duration, volume = 0.1) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+  oscillator.type = type; 
+  oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+  gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + 0.01);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  oscillator.start();
+  oscillator.stop(audioCtx.currentTime + duration);
 }
 
-function showResetConfirm() {
-  const el = document.getElementById('resetConfirmOverlay');
-  if (el) el.style.display = 'flex';
-}
-
-function hideResetConfirm() {
-  const el = document.getElementById('resetConfirmOverlay');
-  if (el) el.style.display = 'none';
-}
-
-// --- GRID UI ---
-function toggleGrid(){
-  const overlay = document.getElementById("gridOverlay");
-  overlay.style.display = (overlay.style.display === "flex") ? "none" : "flex";
-  if (overlay.style.display === "flex") buildGrid();
-}
+/* ==========================================================================
+   5. GRID & LESSON MANAGEMENT
+   ========================================================================== */
 
 function buildGrid(){
   saveToDevice();
   const maxWeek = getMaxWeek();
   const container = document.getElementById('gridContent');
   const containerWidth = container ? container.clientWidth : window.innerWidth;
-  const weekColWidth = 48;
-  const horizontalPadding = 12;
-  const availableForSubjects = Math.max(120, containerWidth - weekColWidth - horizontalPadding);
+  const availableForSubjects = Math.max(120, containerWidth - 48 - 12);
   const subjectWidth = Math.max(32, Math.floor(availableForSubjects / subjects.length));
 
-  let html = "<table><colgroup>";
-  html += `<col style="width:${weekColWidth}px">`;
+  let html = `<table><colgroup><col style="width:48px">`;
   subjects.forEach(() => { html += `<col style="width:${subjectWidth}px">`; });
   html += '</colgroup><tr><th></th>';
   subjects.forEach(s => { html += `<th class="subjectHeader" onclick="toggleSubject('${s}')"><span>${s}</span></th>`; });
@@ -909,11 +1034,7 @@ function buildGrid(){
   bindWeekHeaderHandlers();
 }
 
-function bindWeekHeaderHandlers(){
-  document.querySelectorAll('#grid th.week-header').forEach(th => th.addEventListener('click', ()=> toggleWeek(Number(th.getAttribute('data-week')))));
-  document.querySelectorAll('#grid .weekNumber').forEach(btn => btn.addEventListener('click', function(e){ e.stopPropagation(); toggleAllowWeek(e, Number(this.getAttribute('data-week'))); }));
-}
-
+// --- Grid Interaction Helpers ---
 function toggleCell(s,w){ gridState[s][w] = !gridState[s][w]; buildGrid(); }
 function toggleSubject(s){ const anyOn = weeks.some(w => gridState[s][w]); weeks.forEach(w => gridState[s][w] = !anyOn); buildGrid(); }
 function toggleWeek(w){ const anyOn = subjects.some(s => gridState[s][w]); subjects.forEach(s => gridState[s][w] = !anyOn); buildGrid(); }
@@ -930,9 +1051,62 @@ function toggleAllowWeek(e, w) {
   saveToDevice(); buildGrid();
 }
 
-function updateVh() { document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px'); }
-window.addEventListener('resize', updateVh);
-updateVh();
+function bindWeekHeaderHandlers(){
+  document.querySelectorAll('#grid th.week-header').forEach(th => th.addEventListener('click', ()=> toggleWeek(Number(th.getAttribute('data-week')))));
+  document.querySelectorAll('#grid .weekNumber').forEach(btn => btn.addEventListener('click', function(e){ e.stopPropagation(); toggleAllowWeek(e, Number(this.getAttribute('data-week'))); }));
+}
+
+function toggleGrid(){
+  const overlay = document.getElementById("gridOverlay");
+  overlay.style.display = (overlay.style.display === "flex") ? "none" : "flex";
+  if (overlay.style.display === "flex") buildGrid();
+}
+
+/* ==========================================================================
+   6. WEEK SELECTION & RESET DIALOGS
+   ========================================================================== */
+
+function getMaxWeek() {
+  const el = document.getElementById("maxWeekDisplay");
+  return Math.max(1, Math.min(24, parseInt(el.textContent, 10) || 24));
+}
+function setMaxWeek(n) {
+  document.getElementById("maxWeekDisplay").textContent = String(Math.max(1, Math.min(24, Number(n) || 1)));
+}
+function increaseWeek() { setMaxWeek(getMaxWeek() + 1); buildGrid(); }
+function decreaseWeek() { setMaxWeek(getMaxWeek() - 1); buildGrid(); }
+
+function showResetConfirm() { document.getElementById('resetConfirmOverlay').style.display = 'flex'; }
+function hideResetConfirm() { document.getElementById('resetConfirmOverlay').style.display = 'none'; }
+
+function resetGrid() { showResetConfirm(); }
+
+function resetGridConfirmed() {
+  isSpinning = false;
+  hideResetConfirm();
+  subjects.forEach(s => {
+    gridState[s] = {};
+    weeks.forEach(w => gridState[s][w] = true);
+  });
+  allowedWeeks = [];
+  blockedWeeks = [];
+  saveToDevice();
+  buildGrid();
+  
+  const spinBtn = document.getElementById("spinBtn");
+  spinBtn.textContent = "Spin";
+  spinBtn.style.background = "var(--primary)"; 
+  spinBtn.disabled = false;
+  
+  document.getElementById('prompt').textContent = "Grid Reset!";
+  document.getElementById('answerContent').textContent = ""; 
+  document.getElementById('answerContainer').classList.remove('open');
+  document.getElementById('toggleAnswer').disabled = true;
+}
+
+/* ==========================================================================
+   7. INPUT & SERVICE WORKER BINDINGS
+   ========================================================================== */
 
 function bindHoldButton(id, actionFn){
   const el = document.getElementById(id);
@@ -945,60 +1119,22 @@ function bindHoldButton(id, actionFn){
 bindHoldButton('increaseWeek', increaseWeek);
 bindHoldButton('decreaseWeek', decreaseWeek);
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => console.log('Service Worker registered!'))
-      .catch(err => console.log('Service Worker failed:', err));
-  });
-}
-  
-if (navigator.vibrate) {
-  navigator.vibrate(40); // A tiny "thump"
-}
-  
+// --- PWA Service Worker ---
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js').then(reg => {
-      // Check for updates every time the app is opened
       reg.update(); 
-    });
-  });
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js').then(reg => {
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // This fires when the new version is ready. 
-          // You can show a "New Update Available" toast or just auto-reload.
-          if (confirm("New version available! Update now?")) {
-            window.location.reload();
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            if (confirm("New version available! Update now?")) window.location.reload();
           }
-        }
+        });
       });
     });
   });
 }
-
-fetch('manifest.json') 
-  .then(response => {
-    if (!response.ok) throw new Error("Manifest not found");
-    return response.json();
-  })
-  .then(manifest => {
-    const versionElement = document.getElementById('app-version');
-    if (versionElement && manifest.version) {
-      versionElement.innerText = manifest.version;
-    }
-  })
-  .catch(err => {
-    // If GitHub is down or you're offline, show a fallback so it's not "Loading..."
-    console.log("Manifest fetch failed, using fallback.");
-    document.getElementById('app-version').innerText = "not available";
-  });
 </script>
 </body>
 </html>
