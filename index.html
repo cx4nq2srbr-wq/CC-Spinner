@@ -3,8 +3,7 @@
 <head>
   <meta name="theme-color" content="#f0f7ff">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CC Spinner">
@@ -29,6 +28,10 @@
   --text-muted: #64748b;
   --radius: 24px;
   --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+
+  /* dimensions used by controls */
+  --spin-size: 85px;
+  --undo-size: 50px;
 }
 
 /* ==========================================================================
@@ -39,7 +42,13 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden; 
-  touch-action: none;
+  touch-action: pan-y;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+input, button, select, textarea {
+  font-size: 16px !important; /* iOS zooms if font-size is less than 16px */
 }
 
 body {
@@ -207,107 +216,96 @@ h1 {
 
 .control-row {
   position: fixed;
-  bottom: 100px;
-  right: 20px;
+  /* Fixed 50px for the edit bar + the device notch */
+  bottom: calc(50px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  height: 0; /* Let children overflow so they don't block the screen */
   display: flex;
-  flex-direction: row; /* Ensures Undo is Left, Spin is Right */
-  align-items: center;
-  gap: 15px;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none; 
   z-index: 600;
 }
 
-#spinBtn {
-  width: 85px;
-  height: 85px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
+#spinBtn, #undoBtn {
+  width: 90px; 
+  height: 90px;
   border: none;
-  border-bottom: 4px solid var(--primary-dark);
-  font-size: 18px;
-  font-weight: 800;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 25px rgba(255, 111, 97, 0.4);
   cursor: pointer;
-  transition: all 0.1s ease;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 0; /* Remove padding as SVG handles placement */
+  overflow: visible;
 }
 
-#spinBtn:active {
-  transform: translateY(2px);
-  border-bottom-width: 1px;
+#spinBtn svg, #undoBtn svg {
+  width: 100%;
+  height: 100%;
+}
+
+#spinBtn text, #undoBtn text {
+  fill: white;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 18px; /* SVG font size scales differently */
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#spinBtn {
+  background: var(--primary);
+  border-radius: 100% 0 0 0;
+  transform-origin: bottom right;
+}
+
+#undoBtn {
+  background: var(--secondary);
+  border-radius: 0 100% 0 0;
+  transform-origin: bottom left;
+}
+
+/* Bouncy feedback for both */
+#spinBtn:active, #undoBtn:not(:disabled):active {
+  transform: scale(0.85);
+}
+
+#undoBtn:disabled {
+  transform: scale(0); /* Mushroom shrink */
+  opacity: 0;
+  pointer-events: none;
 }
 
 #spinBtn:disabled {
   background: #cbd5e1;
-  border-bottom-color: #94a3b8;
-  box-shadow: none;
-  opacity: 0.7;
+  transform: scale(0.95);
+  cursor: not-allowed;
 }
 
-#undoBtn {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: white;
-  color: var(--secondary);
-  border: 2px solid rgba(74, 144, 226, 0.3);
-  font-size: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-  transition: all 0.2s ease;
-  padding: 0 4px 4px 0; /* Slight nudge to center the ⤾ */
-}
-
-#undoBtn:disabled {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(30px) scale(0.5); /* Hide behind spin button */
-}
-
-#undoBtn:not(:disabled):active {
-  transform: scale(0.9);
-  background: #f1f5f9;
-}
-
-/* Bottom Nav / Edit Button */
+/* Edit Bar Polish */
 #editBtn {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  bottom: 0; 
+  left: 0; 
+  right: 0;
+  /* Safe area handling for modern iPhones */
+  height: calc(50px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  
+  background: white;
   color: var(--secondary);
   border: none;
   border-top: 1px solid rgba(0,0,0,0.1);
-  border-radius: 0;
-  padding: 15px 0;
-  width: 100%;
+  font-family: inherit;
   font-weight: 700;
   font-size: 16px;
   z-index: 500;
-  padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
   cursor: pointer;
-}
-
-/* Toggle Answer States */
-#toggleAnswer:hover { background: rgba(74, 144, 226, 0.1); }
-#toggleAnswer:active {
-  transform: scale(0.96);
-  background: var(--secondary);
-  color: #fff;
-}
-#toggleAnswer:disabled {
-  opacity: 0.3;
-  border-color: #cbd5e1;
-  color: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ==========================================================================
@@ -456,8 +454,25 @@ h1 {
 <div class="version-tag">v<span id="app-version">1.0.4</span></div>
 
 <div class="control-row">
-  <button id="undoBtn" onclick="undoLastSpin()" disabled>⤿</button>
-  <button id="spinBtn" onclick="spinBoth()">Spin</button>
+  <button id="undoBtn" onclick="undoLastSpin()" disabled>
+    <svg viewBox="0 0 100 100">
+      <!-- Even tighter arc, closer to the corner -->
+      <path id="undoCurve" d="M 30,30 A 50,50 0 0 1 70,70" fill="transparent" />
+      <text>
+        <textPath xlink:href="#undoCurve" startOffset="50%" text-anchor="middle">undo</textPath>
+      </text>
+    </svg>
+  </button>
+
+  <button id="spinBtn" onclick="spinBoth()">
+    <svg viewBox="0 0 100 100">
+      <!-- Even tighter arc, closer to the corner -->
+      <path id="spinCurve" d="M 30,70 A 50,50 0 0 1 70,30" fill="transparent" />
+      <text>
+        <textPath xlink:href="#spinCurve" startOffset="50%" text-anchor="middle">SPIN</textPath>
+      </text>
+    </svg>
+  </button>
 </div>
 
 <div id="resetConfirmOverlay">
@@ -1103,6 +1118,21 @@ function resetGridConfirmed() {
   document.getElementById('answerContainer').classList.remove('open');
   document.getElementById('toggleAnswer').disabled = true;
 }
+
+document.addEventListener('touchstart', function (event) {
+  if (event.touches.length > 1) {
+    event.preventDefault();
+  }
+}, { passive: false });
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+  const now = (new Date()).getTime();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
 
 /* ==========================================================================
    7. INPUT & SERVICE WORKER BINDINGS
