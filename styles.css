@@ -1,0 +1,788 @@
+/* ==========================================================================
+   1. FOUNDATION & VARIABLES
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap');
+
+:root {
+  --primary: #ff6f61;
+  --primary-dark: #d9534f;
+  --secondary: #4a90e2;
+  --bg: #f8fafc;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --radius: 24px;
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+
+  --spin-size: 85px;
+  --undo-size: 50px;
+}
+
+/* ==========================================================================
+   2. GLOBAL LAYOUT & BODY
+   ========================================================================== */
+html {
+  height: 100%;
+  background-color: #e2e8f0; 
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  height: 100vh; 
+  padding: env(safe-area-inset-top, 20px) 15px calc(65px + env(safe-area-inset-bottom, 0px)) 15px;
+  overflow: hidden; 
+  touch-action: pan-y;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  
+  font-family: 'Quicksand', sans-serif;
+  background: radial-gradient(circle at top, #f0f7ff, #e2e8f0);
+  background-attachment: fixed;
+  color: var(--text-main);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+input, button, select, textarea {
+  font-size: 16px !important; 
+}
+
+/* ==========================================================================
+   3. UI COMPONENTS (Prompt & Answer Boxes)
+   ========================================================================== */
+#prompt, #reviewPrompt, .slot {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  flex-shrink: 0;      
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#prompt, #reviewPrompt {
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 95%;          
+  max-width: 600px !important; 
+  height: 120px; 
+  overflow-y: auto;
+  margin: 12px auto; 
+  padding: 18px;
+  box-sizing: border-box;
+  font-size: 19px; 
+  font-weight: 600; 
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  transition: border-color 0.3s ease;
+}
+
+@media (max-width: 480px) {
+    #prompt, #reviewPrompt { font-size: 16px; padding: 12px; height: 110px; }
+}
+
+#answerContainer, #reviewAnswerContainer {
+  width: 95%;
+  max-width: 600px !important;
+  margin: 12px auto;
+  box-sizing: border-box;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+#answerContainer.open {
+  border: 2px solid rgba(74, 144, 226, 0.4);
+  transform: scale(1.01);
+}
+
+#answerContainer.open #answerContent, 
+#reviewAnswerContainer.open #reviewAnswerContent {
+    max-height: 450px;
+    padding: 20px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+#toggleAnswer {
+    width: 100%;
+    padding: 18px;
+    background-color: var(--secondary);
+    color: white;
+    border: none;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#toggleAnswer:hover {
+    background-color: #357abd;
+}
+
+#answerContent, #reviewAnswerContent {
+  padding: 0 20px;
+  max-height: 0px;   
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  color: var(--text-muted);
+  font-size: 17px;
+  white-space: pre-wrap;
+  text-align: center;
+  box-sizing: border-box; 
+}
+
+/* ==========================================================================
+   4. THE SLOT MACHINE
+   ========================================================================== */
+.rollerBox { 
+  display: flex; 
+  justify-content: center; 
+  gap: 15px; 
+  margin: 20px 0; 
+}
+
+.slot { 
+  width: 150px; 
+  height: 80px; 
+  border: 3px solid rgba(74, 144, 226, 0.3); 
+  position: relative; 
+}
+
+.slot::after {
+  content: ""; 
+  position: absolute; 
+  top: 0; left: 0; right: 0; height: 100%;
+  background: linear-gradient(rgba(0,0,0,0.05) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.05) 100%); 
+  pointer-events: none;
+}
+
+.reel div { 
+  height: 80px; 
+  flex-shrink:  0;
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 20px; 
+  font-weight: 700; 
+  color: var(--text-main);
+  background: linear-gradient(to bottom, #fff, #f0f7ff, #fff);
+}
+
+.reel {
+  display: flex;
+  flex-direction: column;
+  transition: transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95); 
+}
+
+/* ==========================================================================
+   5. BUTTONS (Actions)
+   ========================================================================== */
+.control-row {
+  position: fixed;
+  bottom: calc(65px + env(safe-area-inset-bottom, 0px)); 
+  left: 0;
+  right: 0;
+  height: 0; 
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none; 
+  z-index: 600;
+}
+
+#spinBtn, #undoBtn {
+  width: 90px; 
+  height: 90px;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease;
+  padding: 0; 
+  overflow: visible;
+}
+
+#spinBtn svg, #undoBtn svg {
+  width: 100%;
+  height: 100%;
+}
+
+#spinBtn text, #undoBtn text {
+  fill: white;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 18px; 
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#spinBtn {
+  background: var(--primary);
+  border-radius: 100% 0 0 0;
+  transform-origin: bottom right;
+}
+
+#undoBtn {
+  background: var(--secondary);
+  border-radius: 0 100% 0 0;
+  transform-origin: bottom left;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, opacity 0.3s ease;
+}
+
+#spinBtn:active, #undoBtn:not(:disabled):active {
+  transform: scale(0.85);
+}
+
+#undoBtn:disabled {
+    background-color: #94b8e2;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: not-allowed;
+    transform: scale(0.98);
+    opacity: 0.7;
+    box-shadow: none;
+}
+
+#spinBtn:disabled {
+    background-color: #ff9d94; 
+    color: rgba(255, 255, 255, 0.6);
+    cursor: not-allowed;
+    transform: scale(0.98);
+    opacity: 0.7;
+    box-shadow: none;
+}
+
+button:disabled svg text {
+    fill: rgba(255, 255, 255, 0.5);
+    transition: fill 0.3s ease;
+}
+  
+/* ==========================================================================
+   6. LESSONS GRID VIEW & CONTROLS
+   ========================================================================== */
+#gridContainer {
+    width: 100%; 
+    flex: 1;
+    min-height: 0;
+    display: none; 
+    flex-direction: column; 
+    overflow: hidden;
+}
+
+#gridContainer.active {
+    display: flex;
+}
+
+#gridContent {
+    width: 100%; 
+    flex: 1 1 0; 
+    min-height: 0; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;
+}
+  
+#grid {
+  padding: 0 6px 20px 6px; 
+  overflow: auto; 
+  -webkit-overflow-scrolling: touch; 
+  touch-action: pan-y; 
+  width: 100%; 
+  box-sizing: border-box; 
+  flex: 1 1 0;
+  height: 100%;
+}
+
+#grid table { 
+    table-layout: fixed; 
+    width: 100%; 
+    border-collapse: separate; 
+    border-spacing: 0; 
+    background: white; 
+    border-top: 1px solid #aaa;
+    border-left: 1px solid #aaa;
+}
+#grid th, #grid td {
+  border-right: 1px solid #aaa; 
+  border-bottom: 1px solid #aaa; 
+  padding: 0; 
+  height: 40px; 
+  text-align: center;
+  white-space: nowrap; 
+  font-size: 14px;
+}
+
+#grid th.top-header {
+  position: -webkit-sticky;
+  position: sticky;
+  top: -1px; 
+  z-index: 10;
+  background: #fff; 
+}
+
+#grid th.subjectHeader {
+  height: 100px;
+  background: #ffd966;
+  vertical-align: middle;
+  z-index: 11;
+}
+
+#grid th.subjectHeader.blocked-header {
+  background: #fdecea; 
+}
+
+#grid th.subjectHeader span {
+  display: inline-block;
+  transform: rotate(-90deg) translateX(-30px); 
+  white-space: nowrap;
+  line-height: 1;
+  width: 20px; 
+  font-weight: 700;
+  font-size: 13px;
+  color: #000;
+  pointer-events: none;
+}
+
+.week-header { background: #cce7ff; width: 56px; }
+.weekNumber {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; border: none; background: #fff;
+  font-weight: 700; font-size: 16px; color: #0b2540; cursor: pointer;
+}
+.weekNumber.active { background: #22c55e; color: #fff; }
+.completed { background: #ccc !important; color: #666; }
+.override { background: #d4f0d8; }
+.blocked { background: #fdecea; color: #5a2a28; }
+
+.grid-controls-row {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    padding: 15px 20px;
+    background: #fdfdfd;
+}
+
+.maxWeekControl {
+ display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff8d6;
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid #f3d08a;
+    font-weight: 600;
+}
+
+.maxWeekBtn {
+  width: 34px; height: 34px; background: #ffd37a; border: 1px solid #e6a83a;
+  border-radius: 8px; cursor: pointer; font-size: 18px;
+}
+
+.resetHeaderBtn {
+  background: none;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resetHeaderBtn:hover { background: #fff5f5; }
+.resetHeaderBtn:active { background: #dc3545; color: white; }
+
+#cyclePicker {
+    appearance: none; 
+    -webkit-appearance: none;
+    background-color: var(--secondary);
+    color: white;
+    padding: 10px 35px 10px 20px;
+    border-radius: 25px;
+    font-weight: 800;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.2s, background 0.2s;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+    font-family: inherit;
+    margin: 0;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px top 50%;
+    background-size: 12px auto;
+}
+
+#cyclePicker:hover { transform: translateY(-2px); background-color: #357abd; }
+#cyclePicker:active { transform: translateY(0); }
+  
+/* ==========================================================================
+   7. MODALS & DIALOGS
+   ========================================================================== */
+#resetConfirmOverlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 3000;
+}
+
+#doneOverlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 4000;
+}
+
+#doneOverlay .doneBox {
+  position: relative;
+  background: #fff;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  width: 88%;
+  max-width: 420px;
+  text-align: center;
+  overflow: hidden;
+  z-index: 2;
+}
+
+#doneOverlay canvas {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#doneOverlay .doneActions { position: relative; z-index: 2; }
+
+#resetConfirmOverlay .confirmBox {
+  background: #fff;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  width: 85%;
+  max-width: 320px;
+  text-align: center;
+}
+
+.picker-btn {
+    padding: 12px; 
+    border-radius: 12px; 
+    font-weight: 700; 
+    font-size: 14px; 
+    cursor: pointer; 
+    border: 2px solid #cce7ff; 
+    background: #f0f7ff; 
+    color: var(--secondary);
+    transition: all 0.2s ease;
+}
+
+.picker-btn.selected {
+    background: var(--secondary);
+    border-color: var(--secondary);
+    color: white;
+}
+
+/* ========================================================================== 
+   8. VIEW MANAGEMENT
+   ========================================================================== */
+.version-tag {
+    position: absolute; 
+    top: env(safe-area-inset-top, 10px);
+    right: 15px; 
+    font-size: 11px; 
+    color: #cbd5e1;  
+    opacity: 0.8;    
+}
+
+.view-container {
+    display: none; 
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.view-container.active { display: flex; }
+
+/* ========================================================================== 
+   9. REVIEW MODE CONTROLS 
+   ========================================================================== */
+.review-layout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 0;
+    margin: 0 auto;
+}
+
+.review-controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.ctrl-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.review-slot {
+    position: relative; 
+    cursor: pointer;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+}
+
+.review-slot::after { 
+    display: none; 
+}
+
+.review-slot::before {
+    content: "";
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background: linear-gradient(rgba(0,0,0,0.05) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.05) 100%);
+    pointer-events: none;
+    z-index: 5;
+    display: block;
+    margin-bottom: -80px; /* Pulls the reel text up underneath the shadow */
+}
+
+.review-slot::-webkit-scrollbar { display: none; }
+.review-slot .reel { transition: none !important; transform: none !important; }
+.review-slot .reel div { height: 80px; scroll-snap-align: start; }
+
+#reviewContainer {
+    width: 100%; height: 100%; padding: 0; margin: 0; box-sizing: border-box; overflow: hidden;
+}
+
+#reviewContainer.active {
+    display: flex; flex-direction: column; justify-content: flex-start; align-items: center; overflow: hidden;
+}
+
+.prompt-text { min-height: 100px; margin-bottom: 15px; }
+
+.review-always-open #reviewAnswerContent { max-height: none !important; padding: 20px !important; opacity: 1 !important; display: block !important; }
+#reviewAnswerContent { max-height: none !important; padding: 20px !important; opacity: 1 !important; display: block !important; }
+
+#reviewAnswerContainer.review-always-open {
+    background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-radius: var(--radius); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: var(--shadow);
+}
+
+.answer-header-static {
+    width: 100%; 
+    padding: 18px; 
+    background-color: var(--secondary); 
+    color: white; 
+    font-size: 16px; 
+    font-weight: 800; 
+    text-align: center; 
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    box-sizing: border-box; 
+}
+
+/* ==========================================================================
+   10. DARK MODE OVERRIDES
+   ========================================================================== */
+html.dark-mode { background-color: #0f172a; }
+
+body.dark-mode {
+    background: radial-gradient(circle at top, #1e293b, #0f172a);
+    color: #f8fafc;
+}
+
+body.dark-mode #prompt, body.dark-mode #reviewPrompt, 
+body.dark-mode .slot, body.dark-mode #answerContainer, 
+body.dark-mode #reviewAnswerContainer, body.dark-mode .review-slot {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .slot::after { background: linear-gradient(rgba(0,0,0,0.5) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.5) 100%); }
+body.dark-mode .review-slot::before { 
+    background: linear-gradient(rgba(0,0,0,0.5) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.5) 100%); 
+}
+body.dark-mode .reel div { background: linear-gradient(to bottom, #1e293b, #334155, #1e293b); color: #f8fafc; }
+
+body.dark-mode #answerContent, body.dark-mode #reviewAnswerContent { color: #cbd5e1; }
+
+body.dark-mode #answerContent b, body.dark-mode #reviewAnswerContent b,
+body.dark-mode #answerContent strong, body.dark-mode #reviewAnswerContent strong {
+    color: #ffffff; font-weight: 800;
+}
+
+body.dark-mode #gridContent, body.dark-mode .grid-controls-row { background: transparent; }
+body.dark-mode #grid table { background: #020617; border-top-color: #64748b; border-left-color: #64748b; }
+body.dark-mode #grid th, body.dark-mode #grid td { border-right-color: #64748b; border-bottom-color: #64748b; }
+
+body.dark-mode #grid td { background: #1e293b; }
+body.dark-mode .completed { background: #020617 !important; color: #475569; }
+
+body.dark-mode #grid th.top-header { background: #1e293b; } 
+body.dark-mode #grid th.subjectHeader { background: #b45309; } 
+body.dark-mode #grid th.subjectHeader.blocked-header { background: #7f1d1d; } 
+body.dark-mode #grid th.subjectHeader span { color: #f8fafc; }
+
+body.dark-mode .weekNumber { background: #334155; color: #f8fafc; }
+body.dark-mode .weekNumber.active { background: #22c55e; color: #fff; }
+body.dark-mode .override { background: #064e3b; }
+body.dark-mode .blocked { background: #7f1d1d; color: #fecaca; }
+body.dark-mode .maxWeekControl { background: #334155; border-color: #475569; color: #f8fafc; }
+body.dark-mode .maxWeekBtn { background: #475569; border-color: #64748b; color: #f8fafc; }
+
+body.dark-mode #reviewPickerOverlay > div, body.dark-mode .confirmBox, body.dark-mode .doneBox { background: #1e293b !important; color: #f8fafc !important; }
+body.dark-mode #pickerTitle { color: #f8fafc !important; }
+body.dark-mode #reviewPickerOverlay button[onclick="closePicker()"] { background: #0f172a !important; color: #cbd5e1 !important; }
+
+body.dark-mode .picker-btn { background: #334155; border-color: #475569; color: #cbd5e1; }
+
+body.dark-mode .picker-btn.selected { background: #cbd5e1; border-color: #cbd5e1; color: #0f172a; }
+body.dark-mode .bottom-nav { background: rgba(15, 23, 42, 0.95); border-top-color: rgba(255, 255, 255, 0.1); }
+body.dark-mode .nav-item { color: #64748b; }
+body.dark-mode .nav-item.active { color: var(--secondary); }
+
+body.dark-mode .setting-item { background: rgba(30, 41, 59, 0.9); border-color: rgba(255, 255, 255, 0.1); }
+body.dark-mode .setting-text h4 { color: #f8fafc; }
+body.dark-mode .setting-text p { color: #94a3b8; }
+body.dark-mode .toggle-switch { background-color: #475569; }
+body.dark-mode .toggle-switch.on { background-color: #34c759; }
+
+/* ==========================================================================
+   11. BOTTOM NAVIGATION BAR
+   ========================================================================== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 65px;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: content-box; 
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(74, 144, 226, 0.2);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 2000;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: all 0.2s ease;
+}
+
+.nav-item svg { width: 24px; height: 24px; }
+.nav-item.active { color: var(--secondary); transform: translateY(-2px); }
+.nav-item:active { transform: scale(0.95); }
+
+/* ==========================================================================
+   12. SETTINGS MENU & TOGGLES
+   ========================================================================== */
+.settings-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 95%;
+    max-width: 400px;
+    margin: 0 auto 100px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 2px solid rgba(74, 144, 226, 0.2);
+    border-radius: 16px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    box-shadow: var(--shadow);
+}
+
+.setting-item:hover { border-color: var(--secondary); transform: translateY(-2px); }
+.setting-item:active { transform: scale(0.98); }
+
+.setting-text { flex: 1; margin-right: 15px; }
+.setting-text h4 { margin: 0 0 2px 0; color: var(--secondary); font-size: 16px; font-weight: 800; }
+.setting-text p { margin: 0; font-size: 13px; color: var(--text-muted); }
+
+.toggle-switch {
+    width: 50px;
+    height: 30px;
+    background-color: #cbd5e1; 
+    border-radius: 30px;
+    position: relative;
+    transition: background-color 0.3s ease;
+    flex-shrink: 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toggle-switch.on { background-color: #34c759; }
+
+.toggle-knob {
+    width: 26px;
+    height: 26px;
+    background-color: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.3); 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.on .toggle-knob { transform: translateX(20px); }

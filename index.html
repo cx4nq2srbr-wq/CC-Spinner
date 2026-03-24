@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="theme-color" content="#f0f7ff">
+  <meta name="theme-color" content="#ff6f61">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,613 +12,164 @@
   <link rel="manifest" href="manifest.json">
 
   <title>CC Spinner</title>
+  <link rel="stylesheet" href="styles.css">
 
   <script data-goatcounter="https://cc-spinner.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
         
-<style>
-/* ==========================================================================
-   1. FOUNDATION & VARIABLES
-   ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap');
-
-:root {
-  --primary: #ff6f61;
-  --primary-dark: #d9534f;
-  --secondary: #4a90e2;
-  --bg: #f8fafc;
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --radius: 24px;
-  --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-
-  /* dimensions used by controls */
-  --spin-size: 85px;
-  --undo-size: 50px;
-}
-
-/* ==========================================================================
-   2. GLOBAL LAYOUT & BODY
-   ========================================================================== */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden; 
-  touch-action: pan-y;
-  -webkit-text-size-adjust: 100%;
-  overscroll-behavior: none;
-}
-
-input, button, select, textarea {
-  font-size: 16px !important; /* iOS zooms if font-size is less than 16px */
-}
-
-body {
-  font-family: 'Quicksand', sans-serif;
-  background: radial-gradient(circle at top, #f0f7ff, #e2e8f0);
-  background-attachment: fixed;
-  color: var(--text-main);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  padding: env(safe-area-inset-top, 20px) 15px 80px 15px; 
-}
-
-h1 {
-  font-weight: 800;
-  font-size: 2rem;
-  color: var(--secondary);
-  margin: 10px 0 5px;
-  text-shadow: 1px 1px 0px #fff;
-}
-
-.version-tag {
-  position: absolute; 
-  top: env(safe-area-inset-top, 10px);
-  right: 15px; 
-  font-size: 10px; 
-  color: var(--text-muted); 
-  opacity: 0.5;
-}
-
-/* ==========================================================================
-   3. UI COMPONENTS (Prompt & Answer Boxes)
-   ========================================================================== */
-
-/* Common Card Base Style */
-#result, #prompt, #answer, .slot {
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  flex-shrink: 0;      
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Prompt Card */
-#prompt {
-  display: flex; 
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  width: 95%;          
-  max-width: 600px !important; 
-  height: 120px; 
-  overflow-y: auto;
-  margin: 12px auto; 
-  padding: 18px;
-  box-sizing: border-box;
-  font-size: 19px; 
-  font-weight: 600; 
-  background: rgba(255, 255, 255, 0.95);
-  border: 2px solid rgba(74, 144, 226, 0.2);
-  transition: border-color 0.3s ease;
-}
-
-/* Unified Answer Container */
-#answerContainer {
-  width: 95%;
-  max-width: 600px !important;
-  margin: 12px auto;
-  box-sizing: border-box;
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius);
-  border: 2px solid rgba(74, 144, 226, 0.2);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-}
-
-#answerContainer.open {
-  border: var(--secondary);
-  transform: scale(1.01);
-}
-
-#toggleAnswer {
-    width: 100%;
-    padding: 18px;
-    /* Matches the Cycle Picker */
-    background-color: var(--secondary);
-    color: white;
-    border: none;
-    
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 800;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-#toggleAnswer:hover {
-    background-color: #357abd;
-}
-#answerContent {
-  padding: 0 20px;
-  max-height: 0px;   overflow-y: auto;
-  transition: all 0.3s ease;
-  color: var(--text-muted);
-  font-size: 17px;
-  white-space: pre-wrap;
-  text-align: center;
-  box-sizing: border-box; 
-}
-
-#answerContainer.open #answerContent {
-  max-height: 450px; 
-  padding: 20px;
-}
-
-/* ==========================================================================
-   4. THE SLOT MACHINE
-   ========================================================================== */
-.rollerBox { 
-  display: flex; 
-  justify-content: center; 
-  gap: 15px; 
-  margin: 20px 0; 
-}
-
-.slot { 
-  width: 150px; 
-  height: 80px; 
-  border: 3px solid rgba(74, 144, 226, 0.3); 
-  position: relative; 
-}
-
-.slot::after {
-  content: ""; 
-  position: absolute; 
-  top: 0; left: 0; right: 0; height: 100%;
-  background: linear-gradient(rgba(0,0,0,0.05) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.05) 100%); 
-  pointer-events: none;
-}
-
-.reel div { 
-  height: 80px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  font-size: 20px; 
-  font-weight: 700; 
-  color: var(--text-main);
-  background: linear-gradient(to bottom, #fff, #f0f7ff, #fff);
-}
-
-.reel {
-  display: flex;
-  flex-direction: column;
-  transition: transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95); /* Default spin speed */
-}
-
-/* ==========================================================================
-   5. BUTTONS (Actions)
-   ========================================================================== */
-
-.control-row {
-  position: fixed;
-  /* Fixed 50px for the edit bar + the device notch */
-  bottom: calc(50px + env(safe-area-inset-bottom, 0px));
-  left: 0;
-  right: 0;
-  height: 0; /* Let children overflow so they don't block the screen */
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  pointer-events: none; 
-  z-index: 600;
-}
-
-#spinBtn, #undoBtn {
-  width: 90px; 
-  height: 90px;
-  border: none;
-  cursor: pointer;
-  pointer-events: auto;
-  -webkit-tap-highlight-color: transparent;
-  display: flex;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease;
-  padding: 0; /* Remove padding as SVG handles placement */
-  overflow: visible;
-}
-
-#spinBtn svg, #undoBtn svg {
-  width: 100%;
-  height: 100%;
-}
-
-#spinBtn text, #undoBtn text {
-  fill: white;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 18px; /* SVG font size scales differently */
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-#spinBtn {
-  background: var(--primary);
-  border-radius: 100% 0 0 0;
-  transform-origin: bottom right;
-}
-
-#undoBtn {
-  background: var(--secondary);
-  border-radius: 0 100% 0 0;
-  transform-origin: bottom left;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, opacity 0.3s ease;
-}
-
-/* Bouncy feedback for both */
-#spinBtn:active, #undoBtn:not(:disabled):active {
-  transform: scale(0.85);
-}
-
-#undoBtn:disabled {
-   background-color: #94b8e2;
-    color: rgba(255, 255, 255, 0.6);
-    cursor: not-allowed;
-    transform: scale(0.98);
-    opacity: 0.7;
-    box-shadow: none;
-}
-
-#spinBtn:disabled {
-background-color: #ff9d94; /* Faded coral/red */
-    color: rgba(255, 255, 255, 0.6);
-    cursor: not-allowed;
-    transform: scale(0.98);
-    opacity: 0.7;
-    box-shadow: none;
-}
-
-  button:disabled svg text {
-    fill: rgba(255, 255, 255, 0.5);
-    transition: fill 0.3s ease;
-}
-  
-/* Edit Bar Polish */
-#editBtn {
-  position: fixed;
-  bottom: 0; 
-  left: 0; 
-  right: 0;
-  /* Safe area handling for modern iPhones */
-  height: calc(50px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  
-  background: white;
-  color: var(--secondary);
-  border: none;
-  border-top: 1px solid rgba(0,0,0,0.1);
-  font-family: inherit;
-  font-weight: 700;
-  font-size: 16px;
-  z-index: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ==========================================================================
-   6. GRID OVERLAY & EDITING
-   ========================================================================== */
-#gridOverlay {
-  display: none; 
-  position: fixed; 
-  inset: 0; 
-  background: rgba(0,0,0,0.35);
-  z-index: 1000; 
-  justify-content: flex-start; 
-  align-items: stretch;
-}
-
-#gridContent {
-  width: 100vw; 
-  height: calc(var(--vh, 1vh) * 100);
-  display: flex; 
-  flex-direction: column; 
-  background: #fff;
-  overflow: hidden; 
-  padding-top: env(safe-area-inset-top, 44px);
-}
-
-.gridHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* This pushes the back arrow left, and the gear right */
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-}
-
-/* Reusable class for the Back and Settings buttons */
-.circleBtn {
-    background-color: var(--secondary);
-    border: none;
-    color: white;
-    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
-    
-    width: 38px;  
-    height: 38px; 
-    border-radius: 50%;
-    font-size: 22px;
-    font-weight: bold;
-    cursor: pointer;
-    
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1; 
-    padding: 0;
-    
-    transition: all 0.2s ease;
-}
-  
-.circleBtn:hover,
-.circleBtn:active {
-    background-color: #357abd;
-    transform: scale(1.05); 
-}
-  
-/* Table Controls & Layout */
-#grid {
-  padding: 12px 6px 32px 6px; 
-  overflow-y: auto; 
-  overflow-x: hidden;
-  touch-action: pan-y; 
-  width: 100%; 
-  box-sizing: border-box; 
-  flex: 1;
-}
-
-#grid table { table-layout: fixed; width: 100%; border-collapse: collapse; background: white; }
-
-#grid th, #grid td {
-  border: 1px solid #aaa; padding: 0; height: 40px; text-align: center;
-  white-space: nowrap; font-size: 14px;
-}
-
-/* Subject Column Header (Rotated Text) */
-#grid th.subjectHeader {
-  height: 100px;
-  background: #ffd966;
-  vertical-align: middle;
-}
-
-#grid th.subjectHeader span {
-  display: inline-block;
-  transform: rotate(-90deg) translateX(-30px); 
-  white-space: nowrap;
-  line-height: 1;
-  width: 20px; 
-  font-weight: 700;
-  font-size: 13px;
-  color: #000;
-  pointer-events: none;
-}
-
-/* Week Selection States */
-.week-header { background: #cce7ff; width: 56px; }
-.weekNumber {
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 100%; border: none; background: #fff;
-  font-weight: 700; font-size: 16px; color: #0b2540; cursor: pointer;
-}
-.weekNumber.active { background: #22c55e; color: #fff; }
-.completed { background: #ccc !important; color: #666; }
-.override { background: #d4f0d8; }
-.blocked { background: #fdecea; color: #5a2a28; }
-
-.grid-controls-row {
-    display: flex;
-    justify-content: space-between; /* Pushes items to the far left and right */
-    align-items: center;
-    padding: 15px 20px;
-    background: #fdfdfd;
-}
-
-.maxWeekControl {
- display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff8d6;
-    padding: 6px 12px;
-    border-radius: 10px;
-    border: 1px solid #f3d08a;
-    font-weight: 600;
-}
-
-.maxWeekBtn {
-  width: 34px; height: 34px; background: #ffd37a; border: 1px solid #e6a83a;
-  border-radius: 8px; cursor: pointer; font-size: 18px;
-}
-
-.resetHeaderBtn {
-  background: none;
-  border: 1px solid #dc3545;
-  color: #dc3545;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.resetHeaderBtn:hover {
-  background: #fff5f5;
-}
-
-.resetHeaderBtn:active {
-  background: #dc3545;
-  color: white;
-}
-  
-/* ==========================================================================
-   7. MODALS & DIALOGS
-   ========================================================================== */
-  #resetConfirmOverlay {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.5);
-  z-index: 3000;
-}
-
-#doneOverlay {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.45);
-  z-index: 4000;
-}
-
-#doneOverlay .doneBox {
-  position: relative;
-  background: #fff;
-  padding: 18px;
-  border-radius: 14px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-  width: 88%;
-  max-width: 420px;
-  text-align: center;
-  overflow: hidden;
-  z-index: 2;
-}
-
-#doneOverlay canvas {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 1;
-}
-
-#doneOverlay .doneActions { position: relative; z-index: 2; }
-
-
-#resetConfirmOverlay .confirmBox {
-  background: #fff;
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  width: 85%;
-  max-width: 320px;
-  text-align: center;
-}
-
-#cyclePicker {
-    appearance: none; /* Removes default browser arrow */
-    -webkit-appearance: none;
-    background-color: var(--secondary);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    text-align: center;
-    transition: transform 0.2s, background 0.2s;
-    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
-    font-family: inherit;
-    min-width: 90px;
-    margin: 0;
-}
-
-#cyclePicker:hover {
-    background-color: #357abd;
-    transform: translateY(-1px);
-}
-
-#cyclePicker:active {
-    transform: translateY(0);
-}
-/* Mobile adjustments for the prompt box */
-@media (max-width: 480px) {
-    #prompt {
-        font-size: 16px; /* Shrinks the text slightly */
-        padding: 12px;   /* Reduces the inner padding to give text more room */
-        height: 110px;   /* Optional: slightly shorter box to save screen space on small phones */
-    }
-}
-  
-</style>
 </head>
 <body>
 
-<div class="rollerBox">
-  <div class="slot">
-    <div class="reel" id="subjectReel"></div>
+<div id="spinnerContainer" class="view-container active">
+  <div class="rollerBox">
+    <div class="slot">
+      <div class="reel" id="subjectReel"></div>
+    </div>
+    <div class="slot">
+      <div class="reel" id="weekReel"></div>
+    </div>
   </div>
-  <div class="slot">
-    <div class="reel" id="weekReel"></div>
+
+  <div id="prompt"></div>
+
+  <div id="answerContainer">
+    <button id="toggleAnswer" onclick="toggleAnswer()">▼ Show Answer ▼</button>
+    <div id="answerContent"></div>
+  </div>
+
+  <div class="control-row">
+    <button id="undoBtn" onclick="undoLastSpin()" disabled>
+      <svg viewBox="0 0 100 100">
+        <path id="undoCurve" d="M 30,30 A 50,50 0 0 1 70,70" fill="transparent" />
+        <text><textPath xlink:href="#undoCurve" startOffset="50%" text-anchor="middle">undo</textPath></text>
+      </svg>
+    </button>
+
+    <button id="spinBtn" onclick="spinBoth()">
+      <svg viewBox="0 0 100 100">
+        <path id="spinCurve" d="M 30,70 A 50,50 0 0 1 70,30" fill="transparent" />
+        <text><textPath xlink:href="#spinCurve" startOffset="50%" text-anchor="middle">SPIN</textPath></text>
+      </svg>
+    </button>
   </div>
 </div>
 
-<div id="prompt"></div>
+<div id="reviewContainer" class="view-container">
+    <div class="review-layout">
+        <div class="review-controls">
+            <div class="ctrl-group">
+                <div class="slot review-slot" id="scrollSubject" onclick="openPicker('subject')">
+                    <div class="reel" id="reviewSubjectReel"></div>
+                </div>
+            </div>
 
-<div id="answerContainer">
-  <button id="toggleAnswer" onclick="toggleAnswer()">▼ Show Answer ▼</button>
-  <div id="answerContent"></div>
+            <div class="ctrl-group">
+                <div class="slot review-slot" id="scrollWeek" onclick="openPicker('week')">
+                    <div class="reel" id="reviewWeekReel"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="reviewPrompt" class="prompt-card-style"></div> 
+        
+        <div id="reviewAnswerContainer">
+            <div class="answer-header-static">ANSWER</div>
+            <div id="reviewAnswerContent"></div>
+        </div>
+    </div>
 </div>
 
-<button id="editBtn" onclick="toggleGrid()">Lesson Settings</button>
+<div id="gridContainer" class="view-container">
+    <div id="gridContent" style="padding-top: 20px; width: 100%; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+        
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 10px; flex-shrink: 0;">
+            <button class="resetHeaderBtn" onclick="resetGrid()" style="padding: 10px 24px; font-size: 14px;">Reset Grid</button>
+            
+            <div style="display: flex; gap: 15px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                <select id="cyclePicker" onchange="changeCycle(this.value)">
+                    <option value="1">Cycle 1</option>
+                    <option value="2">Cycle 2</option>
+                    <option value="3">Cycle 3</option>
+                </select>
+                
+                <div class="maxWeekControl">
+                    <span>Max Week:</span>
+                    <button id="decreaseWeek" class="maxWeekBtn" onclick="decreaseWeek()">-</button>
+                    <span id="maxWeekDisplay">12</span>
+                    <button id="increaseWeek" class="maxWeekBtn" onclick="increaseWeek()">+</button>
+                </div>
+            </div>
+        </div>
 
-<div class="version-tag">v<span id="app-version">loading...</span></div>
-
-<div class="control-row">
-  <button id="undoBtn" onclick="undoLastSpin()" disabled>
-    <svg viewBox="0 0 100 100">
-      <path id="undoCurve" d="M 30,30 A 50,50 0 0 1 70,70" fill="transparent" />
-      <text>
-        <textPath xlink:href="#undoCurve" startOffset="50%" text-anchor="middle">undo</textPath>
-      </text>
-    </svg>
-  </button>
-
-  <button id="spinBtn" onclick="spinBoth()">
-    <svg viewBox="0 0 100 100">
-      <path id="spinCurve" d="M 30,70 A 50,50 0 0 1 70,30" fill="transparent" />
-      <text>
-        <textPath xlink:href="#spinCurve" startOffset="50%" text-anchor="middle">SPIN</textPath>
-      </text>
-    </svg>
-  </button>
+        <div id="grid"></div>
+    </div>
 </div>
+
+<div id="settingsContainer" class="view-container">
+    <div class="version-tag">v<span id="app-version">Loading...</span></div>
+    <h1 class="app-title" style="margin-top: 40px; margin-bottom: 20px;">Settings</h1>
+    
+    <div class="settings-menu">
+        <button class="setting-item" onclick="toggleSound()">
+            <div class="setting-text">
+                <h4>Sound</h4>
+                <p>Play chimes and notes</p>
+            </div>
+            <div class="toggle-switch" id="switch-sound"><div class="toggle-knob"></div></div>
+        </button>
+        
+        <button class="setting-item" id="row-haptics" onclick="toggleHaptics()">
+            <div class="setting-text">
+                <h4>Vibration</h4>
+                <p>Haptic feedback on taps</p>
+            </div>
+            <div class="toggle-switch" id="switch-haptics"><div class="toggle-knob"></div></div>
+        </button>
+        
+        <button class="setting-item" onclick="toggleTurbo()">
+            <div class="setting-text">
+                <h4>Turbo Spin</h4>
+                <p>Faster slot machine animations</p>
+            </div>
+            <div class="toggle-switch" id="switch-turbo"><div class="toggle-knob"></div></div>
+        </button>
+        
+        <button class="setting-item" onclick="toggleAutoReveal()">
+            <div class="setting-text">
+                <h4>Auto-Reveal</h4>
+                <p>Open answer automatically</p>
+            </div>
+            <div class="toggle-switch" id="switch-reveal"><div class="toggle-knob"></div></div>
+        </button>
+        
+        <button class="setting-item" onclick="toggleDarkMode()">
+            <div class="setting-text">
+                <h4>Dark Mode</h4>
+                <p>Easier on the eyes</p>
+            </div>
+            <div class="toggle-switch" id="switch-dark"><div class="toggle-knob"></div></div>
+        </button>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <button class="nav-item active" id="nav-spinner" onclick="switchMode('spinner')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+        <span>Spinner</span>
+    </button>
+    <button class="nav-item" id="nav-review" onclick="switchMode('review')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        <span>Review</span>
+    </button>
+    <button class="nav-item" id="nav-grid" onclick="switchMode('grid')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+        <span>Lessons</span>
+    </button>
+    <button class="nav-item" id="nav-settings" onclick="switchMode('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Settings</span>
+    </button>
+</nav>
 
 <div id="resetConfirmOverlay">
   <div class="confirmBox">
@@ -644,845 +195,16 @@ background-color: #ff9d94; /* Faded coral/red */
   </div>
 </div>
 
-<div id="gridOverlay">
-    <div id="gridContent">
-        <div class="gridHeader">
-          <button class="circleBtn" onclick="toggleGrid()">&larr;</button>
-          
-          <button class="resetHeaderBtn" onclick="resetGrid()">Reset</button>
-          
-          <button class="circleBtn" onclick="toggleSettings()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </button>
-        </div>
-  
-
-        <div class="grid-controls-row">
-            <div class="maxWeekControl">
-                <span>Max Week:</span>
-                <button id="decreaseWeek" class="maxWeekBtn" onclick="decreaseWeek()">-</button>
-                <span id="maxWeekDisplay">12</span>
-                <button id="increaseWeek" class="maxWeekBtn" onclick="increaseWeek()">+</button>
-            </div>
-            <select id="cyclePicker" onchange="changeCycle(this.value)">
-                <option value="1">Cycle 1</option>
-                <option value="2">Cycle 2</option>
-                <option value="3">Cycle 3</option>
-            </select>
-        </div>
-
-        <div id="grid"></div>
-
-        </div>
-    </div>
-  
-  <div id="settingsOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 5000; justify-content: center; align-items: center;">
-    <div style="background: white; width: 90%; max-width: 350px; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-        <h3 style="margin-top: 0; text-align: center; color: var(--primary);">Settings</h3>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;">
-          <label style="font-weight: bold;">Mute Sound</label>
-          <input type="checkbox" id="setMute" onchange="updateSettings()" style="width: 20px; height: 20px;">
-        </div>
-
-        <div id="hapticsContainer" style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;">
-          <label style="font-weight: bold;">Vibration (Haptics)</label>
-          <input type="checkbox" id="setHaptics" onchange="updateSettings()" style="width: 20px; height: 20px;">
-        </div>
-
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;">
-            <label style="font-weight: bold;">Confetti Animation</label>
-            <input type="checkbox" id="setConfetti" onchange="updateSettings()" style="width: 20px; height: 20px;">
-        </div>
-
-        <div style="display: flex; flex-direction: column; margin-bottom: 20px;">
-            <label style="font-weight: bold; margin-bottom: 5px;">Sound Style</label>
-            <select id="setWaveform" onchange="updateSettings()" style="padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px;">
-                <option value="square">Retro (8-bit)</option>
-                <option value="sine">Modern (Smooth)</option>
-                <option value="triangle">Soft (Muted)</option>
-            </select>
-        </div>
-
-        <button onclick="toggleSettings()" style="width: 100%; padding: 12px; background: var(--secondary); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Done</button>
+<div id="reviewPickerOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 5000;">
+    <div style="background: white; width: 90%; max-width: 350px; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 80vh; display: flex; flex-direction: column;">
+        <h3 id="pickerTitle" style="margin-top: 0; text-align: center; color: var(--primary);">Select</h3>
+        <div id="pickerGrid" style="display: grid; gap: 10px; overflow-y: auto; padding: 10px 0;"></div>
+        <button onclick="closePicker()" style="margin-top: 15px; width: 100%; padding: 12px; background: #f1f5f9; color: #64748b; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Cancel</button>
     </div>
 </div>
 
 <script src="data.js"></script>
-  
-<script>
-/* ==========================================================================
-   1. GLOBAL STATE & CONSTANTS
-   ========================================================================== */
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let isSpinning = false;
-let lastSpun = null; // The one we just spun (the "mistake")
-let previousSpun = null;  // The one BEFORE that (the "rewind destination")
+<script src="app.js"></script>
 
-const subjects = ["Bible", "English", "Geography", "History", "Latin", "Math", "Science", "Timeline"];
-const subjectIcons = {
-  "Bible": "📜", "English": "📖", "Geography": "🌍", "History": "⚔️",
-  "Latin": "🏛️", "Math": "🔢", "Science": "🧪", "Timeline": "⏳"
-};
-const weeks = Array.from({length: 24}, (_, i) => i + 1);
-
-const latinTwinGroups = [
-  [1, 2, 13, 14], // Present Tense
-  [3, 4, 15, 16], // Imperfect Tense
-  [5, 6, 17, 18], // Future Tense
-  [7, 8, 19, 20], // Perfect Tense
-  [9, 10, 21, 22], // Pluperfect Tense
-  [11, 12, 23, 24] // Future Perfect Tense
-];
-
-/* ==========================================================================
-   2. INITIALIZATION & DATA LOADING
-   ========================================================================== */
-
-/* --- Persistence for the active cycle --- */
-// MUST be defined before we try to load cycle-specific data
-let currentCycle = localStorage.getItem('ccActiveCycle') ? parseInt(localStorage.getItem('ccActiveCycle')) : 2;
-
-// Cycle-specific prefix for storage
-const getPrefix = () => `cycle${currentCycle}_`;
-
-/* --- Persistence Helpers --- */
-// We load the data based on the prefix of the current cycle
-let gridState = localStorage.getItem(getPrefix() + 'ccSpinnerProgress') ? 
-                JSON.parse(localStorage.getItem(getPrefix() + 'ccSpinnerProgress')) : {};
-
-let allowedWeeks = localStorage.getItem(getPrefix() + 'ccAllowedWeeks') ? 
-                   JSON.parse(localStorage.getItem(getPrefix() + 'ccAllowedWeeks')) : [];
-
-let blockedWeeks = localStorage.getItem(getPrefix() + 'ccBlockedWeeks') ? 
-                   JSON.parse(localStorage.getItem(getPrefix() + 'ccBlockedWeeks')) : [];
-
-let savedMaxWeek = localStorage.getItem(getPrefix() + 'ccMaxWeek');
-
-  // Global User Settings
-let userSettings = JSON.parse(localStorage.getItem('appSettings')) || {
-    muted: false,
-    waveform: 'square', // Options: 'square', 'sine', 'triangle'
-    haptics: true,
-    confetti: true
-};
-
-function saveSettings() {
-    localStorage.setItem('appSettings', JSON.stringify(userSettings));
-}
-
-// Initialize lessonData pointer (Loaded from data.js)
-let lessonData = cycleData[currentCycle];
-
-// Initialize gridState if empty for this cycle
-if (Object.keys(gridState).length === 0) {
-  subjects.forEach(s => {
-    gridState[s] = {};
-    weeks.forEach(w => gridState[s][w] = true);
-  });
-}
-
-function changeCycle(cycleNum) {
-    currentCycle = parseInt(cycleNum);
-    localStorage.setItem('ccActiveCycle', currentCycle);
-    
-    // Update data pointer
-    lessonData = cycleData[currentCycle];
-    
-    // Reload cycle-specific progress
-    gridState = localStorage.getItem(getPrefix() + 'ccSpinnerProgress') ? 
-                JSON.parse(localStorage.getItem(getPrefix() + 'ccSpinnerProgress')) : {};
-    
-    allowedWeeks = localStorage.getItem(getPrefix() + 'ccAllowedWeeks') ? 
-                   JSON.parse(localStorage.getItem(getPrefix() + 'ccAllowedWeeks')) : [];
-                   
-    blockedWeeks = localStorage.getItem(getPrefix() + 'ccBlockedWeeks') ? 
-                   JSON.parse(localStorage.getItem(getPrefix() + 'ccBlockedWeeks')) : [];
-    
-    // If it's a fresh cycle, initialize it
-    if (Object.keys(gridState).length === 0) {
-        subjects.forEach(s => {
-            gridState[s] = {};
-            weeks.forEach(w => gridState[s][w] = true);
-        });
-    }
-
-    // Update UI
-    const cycleMax = localStorage.getItem(getPrefix() + 'ccMaxWeek');
-    setMaxWeek(cycleMax ? parseInt(cycleMax) : 24);
-    buildGrid();
-}
-
-// --- Window Load & App Config ---
-window.onload = function() {
-  document.getElementById('cyclePicker').value = currentCycle;
-  lessonData = cycleData[currentCycle];
-  
-  if (!navigator.vibrate) {
-      const hapticsRow = document.getElementById('hapticsContainer');
-      if (hapticsRow) hapticsRow.style.display = 'none';
-  }
-  
-  const prefix = getPrefix();
-  const savedMax = localStorage.getItem(prefix + 'ccMaxWeek');
-  if (savedMax) setMaxWeek(parseInt(savedMax, 10));
-  else setMaxWeek(24);
-
-  document.getElementById('toggleAnswer').disabled = true;
-  buildGrid();
-  
-  // Initial Vibration Feedback
-  if (userSettings.haptics && navigator.vibrate) navigator.vibrate(40);
-
-  // Sync Version Tag
-  fetch('manifest.json') 
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(m => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = m.version; })
-    .catch(() => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = "not available"; });
-};
-
-function saveToDevice() {
-  const prefix = getPrefix();
-  localStorage.setItem(prefix + 'ccSpinnerProgress', JSON.stringify(gridState));
-  localStorage.setItem(prefix + 'ccMaxWeek', String(getMaxWeek()));
-  localStorage.setItem(prefix + 'ccAllowedWeeks', JSON.stringify(allowedWeeks));
-  localStorage.setItem(prefix + 'ccBlockedWeeks', JSON.stringify(blockedWeeks));
-}
-
-function updateVh() { 
-  document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px'); 
-}
-window.addEventListener('resize', updateVh);
-updateVh();
-
-/* ==========================================================================
-   3. CORE APP LOGIC (Spinning & Toggling)
-   ========================================================================== */
-
-function spinBoth() {
-  const spinBtn = document.getElementById("spinBtn");
-  // Handle Reset State
-  // If we've switched to the Done state, show celebration
-  if (getSpinLabel().toLowerCase() === 'done') { finishLesson(); return; }
-
-  // Handle Reset State
-  if (getSpinLabel() === "Reset") { showResetConfirm(); return; }
-  
-  const toggleBtn = document.getElementById("toggleAnswer");
-  const undoBtn = document.getElementById("undoBtn");
-  const ansDiv = document.getElementById("answerContent");
-  const promptDiv = document.getElementById("prompt");
-
-  if (isSpinning) return;
-  if (userSettings.haptics && navigator.vibrate) navigator.vibrate(15); 
-
-  const maxWeekLimit = getMaxWeek();
-  const availableSubjects = subjects.filter(s =>
-    weeks.some(w => (w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w])
-  );
-
-  if (availableSubjects.length === 0) {
-    setSpinLabel('Reset');
-    spinBtn.style.background = "#64748b";
-    spinBtn.style.fontSize = "14px";
-    return;
-  }
-
-  // Lock State
-  isSpinning = true;
-  spinBtn.disabled = true;
-  toggleBtn.disabled = true;
-  undoBtn.disabled = true;
-  
-  toggleBtn.textContent = '▼ Show Answer ▼';
-  document.getElementById('answerContainer').classList.remove('open');
-  ansDiv.textContent = "";
-  promptDiv.textContent = "";
-
- // 1. Pick the winning subject and week
-  const subject = availableSubjects[Math.floor(Math.random() * availableSubjects.length)];
-  const availableWeeks = weeks.filter(w => ((w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[subject][w]);
-  const week = availableWeeks[Math.floor(Math.random() * availableWeeks.length)];
-
-  // 2. DEFINE THE INDICES 
-  const subIdx = subjects.indexOf(subject);
-  const weekIdx = weeks.indexOf(week);
-
-  // 3. Start Reel Animations
-  spinReel("subjectReel", availableSubjects, subject, 2000);
-  spinReel("weekReel", availableWeeks.map(w => "Week " + w), "Week " + week, 2800);
-
-  // 4. Finalize Spin
-  setTimeout(() => {
-    try {
-      playSound(988, 'triangle', 0.1, 0.03);
-      setTimeout(() => playSound(1319, 'triangle', 0.2, 0.03), 100);
-      if (userSettings.haptics && navigator.vibrate) navigator.vibrate([40, 30, 40]);
-      
-      const lesson = lessonData[subject][week];
-
-      // Save memory for Undo
-      previousSpun = lastSpun ? { ...lastSpun } : null; 
-
-      lastSpun = {
-        subject: subject, 
-        week: week,
-        sIdx: subIdx,   
-        wIdx: weekIdx,   
-        prompt: lesson.p,
-        answer: lesson.a
-      };
-
-      // Display results
-      document.getElementById('prompt').textContent = lesson.p;
-      document.getElementById('answerContent').innerHTML = lesson.a;
-      
-      // Update Grid State
-      gridState[subject][week] = false;
-      
-      if (subject === "Latin" && currentCycle === 2) {
-        const group = latinTwinGroups.find(g => g.includes(week));
-        if (group) {
-          group.forEach(twinWeek => {
-            gridState["Latin"][twinWeek] = false;
-          });
-        }
-      }
-
-      saveToDevice();
-      buildGrid();
-      // If no lessons remain available, change spin button to a green "Done" button
-      const maxWeekLimit = getMaxWeek();
-      const remaining = subjects.some(s =>
-        weeks.some(w => ((w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[s][w])
-      );
-      if (!remaining) {
-        setSpinLabel('Done');
-        spinBtn.style.background = '#22c55e';
-        spinBtn.style.fontSize = '14px';
-      }
-      
-    } catch (e) {
-      console.error("Spin Error:", e);
-      document.getElementById('prompt').textContent = "Spinning error. Please try again!";
-    } finally {
-      // Re-enable everything
-      isSpinning = false;
-      spinBtn.disabled = false;
-      toggleBtn.disabled = false;
-      undoBtn.disabled = false; 
-    }
-  }, 2600);
-}
-
-function spinReel(reelId, items, finalValue, duration = 2400) {
-  const reel = document.getElementById(reelId);
-  reel.innerHTML = "";
-  const sequence = [];
-  for (let i = 0; i < 20; i++) sequence.push(items[Math.floor(Math.random() * items.length)]);
-  sequence.push(finalValue);
-  
-  sequence.forEach(text => {
-    const div = document.createElement("div");
-    div.textContent = subjectIcons[text] ? `${subjectIcons[text]} ${text}` : text;
-    reel.appendChild(div);
-  });
-
-  const totalMove = (sequence.length - 1) * 80;
-  let currentTick = 0;
-  
-  function playNextTick() {
-    if (!isSpinning || currentTick >= sequence.length) return;
-    playSound(400, 'triangle', 0.02, 0.01); 
-    currentTick++;
-    const nextDelay = (duration / sequence.length) * (1 + Math.pow(currentTick / sequence.length, 2) * 10);
-    if (currentTick < sequence.length) setTimeout(playNextTick, nextDelay);
-  }
-  playNextTick();
-
-  reel.style.transition = "none";
-  reel.style.transform = "translateY(0)";
-  setTimeout(() => {
-    reel.style.transition = `transform ${duration}ms cubic-bezier(0.15, 0, 0.15, 1)`;
-    reel.style.transform = `translateY(-${totalMove}px)`;
-  }, 20);
-}
-
-function toggleAnswer() {
-  if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
-  const container = document.getElementById('answerContainer');
-  const btn = document.getElementById('toggleAnswer');
-  container.classList.toggle('open');
-  btn.textContent = container.classList.contains('open') ? '▲ Hide Answer ▲' : '▼ Show Answer ▼';
-}
-
-function undoLastSpin() {
-    if (!lastSpun) return;
-
-    // 1. Put the "mistake" back on the grid
-    gridState[lastSpun.subject][lastSpun.week] = true;
-    if (lastSpun.subject === "Latin" && currentCycle === 2) {
-        const group = latinTwinGroups.find(g => g.includes(lastSpun.week));
-        if (group) {
-            group.forEach(twinWeek => {
-                gridState["Latin"][twinWeek] = true;
-            });
-        }
-    }
-    // 2. Rewind the UI
-    if (previousSpun) {
-        // We must REBUILD the reels with the standard lists so the index matches the physical divs
-        const subReel = document.getElementById('subjectReel');
-        const weekReel = document.getElementById('weekReel');
-
-        // Re-populate Subject Reel with standard list
-        subReel.innerHTML = "";
-        subjects.forEach(s => {
-            const div = document.createElement("div");
-            div.textContent = `${subjectIcons[s]} ${s}`;
-            subReel.appendChild(div);
-        });
-
-        // Re-populate Week Reel with standard list
-        weekReel.innerHTML = "";
-        weeks.forEach(w => {
-            const div = document.createElement("div");
-            div.textContent = "Week " + w;
-            weekReel.appendChild(div);
-        });
-
-        // Force a tiny reflow so the browser sees the new divs before animating
-        subReel.offsetHeight; 
-
-        // Apply the "Rewind" animation
-        subReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-        weekReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-
-        // Move to the PREVIOUS indices
-        subReel.style.transform = `translateY(-${previousSpun.sIdx * 80}px)`;
-        weekReel.style.transform = `translateY(-${previousSpun.wIdx * 80}px)`;
-
-        // Update Text to previous question
-        document.getElementById('prompt').textContent = previousSpun.prompt;
-        document.getElementById('answerContent').innerHTML = previousSpun.answer;
-        
-        // Step back the memory
-        lastSpun = { ...previousSpun };
-        previousSpun = null; 
-    } else {
-        // If there was no previous question, just reset to top
-        document.getElementById('subjectReel').style.transform = `translateY(0)`;
-        document.getElementById('weekReel').style.transform = `translateY(0)`;
-        document.getElementById('prompt').textContent = "Spin to start!";
-        document.getElementById('answerContent').textContent = "";
-        lastSpun = null;
-    }
-
-    // 3. Reset UI state
-    document.getElementById('answerContainer').classList.remove('open');
-    document.getElementById('undoBtn').disabled = true;
-    
-    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(40);
-    saveToDevice();
-    buildGrid();
-}
-
-/* ==========================================================================
-   4. AUDIO & HAPTICS HELPERS
-   ========================================================================== */
-
-function playSound(freq, type, duration, vol) {
-  if (userSettings.muted) return;
-  
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  
-  const osc = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
-  
-  // Use user-selected waveform style (Square, Sine, or Triangle)
-  osc.type = userSettings.waveform || type; 
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  
-  // Smooth volume ramping to prevent "popping" sounds
-  gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime + 0.01);
-  gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  
-  osc.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
-}
-  
-function playVictoryChime() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
-    // A longer, more complex 8-bit RPG fanfare with chords
-    const notes = [
-        // 1. Fast upward sweep (single notes)
-        { freq: 261.63, delay: 0,   duration: 0.1 },  // C4
-        { freq: 392.00, delay: 80,  duration: 0.1 },  // G4
-        { freq: 523.25, delay: 160, duration: 0.1 },  // C5
-        { freq: 659.25, delay: 240, duration: 0.1 },  // E5
-        { freq: 784.00, delay: 320, duration: 0.2 },  // G5
-
-        // 2. F-Major bounce (Chord - 3 notes play at exactly 500ms)
-        { freq: 349.23, delay: 500, duration: 0.15 }, // F4
-        { freq: 440.00, delay: 500, duration: 0.15 }, // A4
-        { freq: 523.25, delay: 500, duration: 0.15 }, // C5
-
-        // 3. G-Major bounce (Chord - 3 notes play at exactly 650ms)
-        { freq: 392.00, delay: 650, duration: 0.15 }, // G4
-        { freq: 493.88, delay: 650, duration: 0.15 }, // B4
-        { freq: 587.33, delay: 650, duration: 0.15 }, // D5
-
-        // 4. Big Triumphant C-Major Resolve (Full 5-note Chord at 850ms)
-        { freq: 261.63, delay: 850, duration: 0.8 },  // C4 (Bass)
-        { freq: 392.00, delay: 850, duration: 0.8 },  // G4
-        { freq: 523.25, delay: 850, duration: 0.8 },  // C5
-        { freq: 659.25, delay: 850, duration: 0.8 },  // E5
-        { freq: 784.00, delay: 850, duration: 0.8 }   // G5 (Melody peak)
-    ];
-    
-    notes.forEach(note => {
-        setTimeout(() => {
-            playSound(note.freq, 'triangle', note.duration, 0.04);
-        }, note.delay);
-    });
-}
-  
-// Helpers to set/get the curved label on the spin button's SVG
-function setSpinLabel(label) {
-  const spinBtn = document.getElementById('spinBtn');
-  if (!spinBtn) return;
-  const tp = spinBtn.querySelector('textPath');
-  if (tp) tp.textContent = String(label).toUpperCase();
-  else spinBtn.textContent = String(label).toUpperCase();
-}
-
-function getSpinLabel() {
-  const spinBtn = document.getElementById('spinBtn');
-  if (!spinBtn) return '';
-  const tp = spinBtn.querySelector('textPath');
-  if (tp) return (tp.textContent || '').trim();
-  return (spinBtn.textContent || '').trim();
-}
-
-/* ==========================================================================
-   5. GRID & LESSON MANAGEMENT
-   ========================================================================== */
-
-function buildGrid(){
-  saveToDevice();
-  const maxWeek = getMaxWeek();
-  const container = document.getElementById('gridContent');
-  const containerWidth = container ? container.clientWidth : window.innerWidth;
-  const availableForSubjects = Math.max(120, containerWidth - 48 - 12);
-  const subjectWidth = Math.max(32, Math.floor(availableForSubjects / subjects.length));
-
-  let html = `<table><colgroup><col style="width:48px">`;
-  subjects.forEach(() => { html += `<col style="width:${subjectWidth}px">`; });
-  html += '</colgroup><tr><th></th>';
-  subjects.forEach(s => { html += `<th class="subjectHeader" onclick="toggleSubject('${s}')"><span>${s}</span></th>`; });
-  html += '</tr>';
-
-  weeks.forEach(w => {
-    const isAllowed = allowedWeeks.includes(w);
-    const isBlocked = blockedWeeks.includes(w);
-    const numClass = isBlocked ? 'blocked' : (isAllowed ? 'active' : '');
-    html += `<tr><th class="week-header" data-week="${w}"><button class="weekNumber ${numClass}" data-week="${w}">${w}</button></th>`;
-    subjects.forEach(s => {
-      let cls = "";
-      if (!gridState[s][w] || isBlocked || (w > maxWeek && !isAllowed)) cls = "completed";
-      else if (isAllowed && w > maxWeek) cls = "override";
-      html += `<td class="${cls}" onclick="toggleCell('${s}',${w})"></td>`;
-    });
-    html += '</tr>';
-  });
-  document.getElementById('grid').innerHTML = html + '</table>';
-  bindWeekHeaderHandlers();
-}
-
-// --- Grid Interaction Helpers ---
-function toggleCell(s,w){ gridState[s][w] = !gridState[s][w]; buildGrid(); }
-function toggleSubject(s){ const anyOn = weeks.some(w => gridState[s][w]); weeks.forEach(w => gridState[s][w] = !anyOn); buildGrid(); }
-function toggleWeek(w){ const anyOn = subjects.some(s => gridState[s][w]); subjects.forEach(s => gridState[s][w] = !anyOn); buildGrid(); }
-
-function toggleAllowWeek(e, w) {
-  const maxWeek = getMaxWeek();
-  const blockedIdx = blockedWeeks.indexOf(w);
-  if (blockedIdx !== -1) blockedWeeks.splice(blockedIdx, 1);
-  else {
-    const allowedIdx = allowedWeeks.indexOf(w);
-    if (allowedIdx !== -1) allowedWeeks.splice(allowedIdx, 1);
-    else (w > maxWeek) ? allowedWeeks.push(w) : blockedWeeks.push(w);
-  }
-  saveToDevice(); buildGrid();
-}
-
-function bindWeekHeaderHandlers(){
-  document.querySelectorAll('#grid th.week-header').forEach(th => th.addEventListener('click', ()=> toggleWeek(Number(th.getAttribute('data-week')))));
-  document.querySelectorAll('#grid .weekNumber').forEach(btn => btn.addEventListener('click', function(e){ e.stopPropagation(); toggleAllowWeek(e, Number(this.getAttribute('data-week'))); }));
-}
-
-function toggleGrid(){
-  const overlay = document.getElementById("gridOverlay");
-  overlay.style.display = (overlay.style.display === "flex") ? "none" : "flex";
-  if (overlay.style.display === "flex") buildGrid();
-}
-/* ==========================================================================
-   6. SETTINGS MENU
-   ========================================================================== */
-
-function toggleSettings() {
-    const overlay = document.getElementById('settingsOverlay');
-    if (overlay.style.display === 'none') {
-        // Load values into the inputs before showing
-        document.getElementById('setMute').checked = userSettings.muted;
-        document.getElementById('setHaptics').checked = userSettings.haptics;
-        document.getElementById('setConfetti').checked = userSettings.confetti;
-        document.getElementById('setWaveform').value = userSettings.waveform;
-        overlay.style.display = 'flex';
-    } else {
-        overlay.style.display = 'none';
-    }
-}
-
-// Save settings when the user changes a toggle/dropdown
-function updateSettings() {
-    userSettings.muted = document.getElementById('setMute').checked;
-    userSettings.haptics = document.getElementById('setHaptics').checked;
-    userSettings.confetti = document.getElementById('setConfetti').checked;
-    userSettings.waveform = document.getElementById('setWaveform').value;
-    saveSettings();
-}  
-/* ==========================================================================
-   7. WEEK SELECTION & RESET DIALOGS
-   ========================================================================== */
-
-function getMaxWeek() {
-  const el = document.getElementById("maxWeekDisplay");
-  return Math.max(1, Math.min(24, parseInt(el.textContent, 10) || 24));
-}
-function setMaxWeek(n) {
-  document.getElementById("maxWeekDisplay").textContent = String(Math.max(1, Math.min(24, Number(n) || 1)));
-}
-function increaseWeek() { setMaxWeek(getMaxWeek() + 1); buildGrid(); }
-function decreaseWeek() { setMaxWeek(getMaxWeek() - 1); buildGrid(); }
-
-function showResetConfirm() { document.getElementById('resetConfirmOverlay').style.display = 'flex'; }
-function hideResetConfirm() { document.getElementById('resetConfirmOverlay').style.display = 'none'; }
-
-function resetGrid() { showResetConfirm(); }
-
-function resetGridConfirmed() {
-  isSpinning = false;
-  hideResetConfirm();
-  subjects.forEach(s => {
-    gridState[s] = {};
-    weeks.forEach(w => gridState[s][w] = true);
-  });
-  allowedWeeks = [];
-  blockedWeeks = [];
-  saveToDevice();
-  buildGrid();
-  
-  const spinBtn = document.getElementById("spinBtn");
-  spinBtn.style.background = "var(--primary)"; 
-  spinBtn.disabled = false;
-  setSpinLabel('SPIN');
-  spinBtn.style.fontSize = '';
-  
-  document.getElementById('prompt').textContent = "Cycle " + currentCycle;
-  document.getElementById('answerContent').textContent = ""; 
-  document.getElementById('answerContainer').classList.remove('open');
-  document.getElementById('toggleAnswer').disabled = true;
-}
-
-/* ==========================================================================
-   8. Finish / Confetti Helpers
-   ========================================================================== */
-let confettiAnimationId = null;
-let confettiParticles = null;
-let confettiResizeHandler = null;
-let isConfettiStopping = false; // New flag to control the "fall out"
-
-function finishLesson() {
-    if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);
-    playVictoryChime(); //
-    showDoneOverlay();
-}
-function showDoneOverlay() {
-    const overlay = document.getElementById('doneOverlay');
-    if (!overlay) return;
-    
-    // 1. Force the styles back to normal BEFORE showing it
-    // This prevents the bug where the box gets stuck invisible!
-    overlay.style.background = 'rgba(0,0,0,0.45)';
-    overlay.style.pointerEvents = 'auto';
-    const box = overlay.querySelector('.doneBox');
-    if (box) box.style.display = 'block';
-
-    // 2. Show the overlay
-    overlay.style.display = 'flex';
-    
-    // 3. Shoot confetti if enabled
-    if (userSettings.confetti) {
-        startConfetti();
-    }
-}
-function hideDoneOverlay() {
-    isConfettiStopping = true;
-    const overlay = document.getElementById('doneOverlay');
-    const box = overlay.querySelector('.doneBox');
-    
-    // Hide the popup box and remove the dark background 
-    if (box) box.style.display = 'none';
-    overlay.style.background = 'transparent';
-    
-    // Let taps pass straight through the invisible overlay to the buttons below!
-    overlay.style.pointerEvents = 'none'; 
-
-    // SAFETY CATCH: If confetti is turned OFF in settings, there are no 
-    // falling pieces to trigger the cleanup, so we must clean it up instantly!
-    if (!userSettings.confetti) {
-        stopConfetti();
-    }
-}
-function startConfetti() {
-    const canvas = document.getElementById('confettiCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    isConfettiStopping = false;
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-    }
-    resize();
-    confettiResizeHandler = resize;
-    window.addEventListener('resize', confettiResizeHandler);
-
-    const w = canvas.width, h = canvas.height;
-    const colors = ['#ef4444','#f97316','#f59e0b','#22c55e','#06b6d4','#6366f1','#ec4899'];
-    const parts = [];
-
-    for (let i = 0; i < 140; i++) {
-        parts.push({
-            x: Math.random() * w,
-            y: Math.random() * -h,
-            vx: (Math.random() - 0.5) * 4,
-            vy: Math.random() * 3 + 2,
-            r: Math.random() * 8 + 4,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            rot: Math.random() * 360,
-            vr: (Math.random() - 0.5) * 10
-        });
-    }
-    confettiParticles = parts;
-
-    function frame(now) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        for (let p of parts) {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.02; // Gravity
-            p.rot += p.vr;
-            
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.rot * Math.PI / 180);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r * 0.6);
-            ctx.restore();
-
-            // If the particle falls off the bottom of the screen
-            if (p.y > canvas.height + 20) {
-                // Only loop it back to the top if we aren't stopping
-                if (!isConfettiStopping) {
-                    p.y = -10;
-                    p.x = Math.random() * canvas.width;
-                    p.vy = Math.random() * 3 + 2;
-                }
-            }
-        }
-
-        // If we are stopping AND all particles are off the screen, end the animation entirely
-        if (isConfettiStopping && parts.every(p => p.y > canvas.height + 20)) {
-            stopConfetti();
-            return; 
-        }
-
-        confettiAnimationId = requestAnimationFrame(frame);
-    }
-    confettiAnimationId = requestAnimationFrame(frame);
-}
-
-function stopConfetti() {
-    if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
-    confettiAnimationId = null;
-    confettiParticles = null;
-    
-    if (confettiResizeHandler) {
-        window.removeEventListener('resize', confettiResizeHandler);
-        confettiResizeHandler = null;
-    }
-    
-    const canvas = document.getElementById('confettiCanvas');
-    if (canvas) {
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // Restore the overlay styles back to their defaults for the next time it's triggered
-    const overlay = document.getElementById('doneOverlay');
-    if (overlay) {
-        overlay.style.display = 'none';
-        overlay.style.background = 'rgba(0,0,0,0.45)';
-        overlay.style.pointerEvents = 'auto';
-        const box = overlay.querySelector('.doneBox');
-        if (box) box.style.display = 'block';
-    }
-}
-
-/* ==========================================================================
-   10. INPUT & SERVICE WORKER BINDINGS
-   ========================================================================== */
-
-function bindHoldButton(id, actionFn){
-  const el = document.getElementById(id);
-  let holdTimeout, holdInterval;
-  const start = (e) => { e.preventDefault(); actionFn(); holdTimeout = setTimeout(()=> holdInterval = setInterval(actionFn, 110), 350); };
-  const stop = () => { clearTimeout(holdTimeout); clearInterval(holdInterval); };
-  el.addEventListener('mousedown', start); el.addEventListener('mouseup', stop); el.addEventListener('mouseleave', stop);
-  el.addEventListener('touchstart', start, {passive:false}); el.addEventListener('touchend', stop);
-}
-bindHoldButton('increaseWeek', increaseWeek);
-bindHoldButton('decreaseWeek', decreaseWeek);
-
-// --- PWA Service Worker ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').then(reg => {
-      reg.update(); 
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            if (confirm("New version available! Update now?")) window.location.reload();
-          }
-        });
-      });
-    });
-  });
-}
-</script>
 </body>
 </html>
