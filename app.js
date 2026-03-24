@@ -77,13 +77,13 @@ let blockedSubjects = localStorage.getItem(getPrefix() + 'ccBlockedSubjects') ?
 let savedMaxWeek = localStorage.getItem(getPrefix() + 'ccMaxWeek');
 
 // Global User Settings
-let userSettings = JSON.parse(localStorage.getItem('appSettings')) || {
+let userSettings = Object.assign({
     muted: false,
     haptics: true,
     turbo: false,
     autoReveal: false,
-    darkMode: false,
-};
+    darkMode: false
+}, JSON.parse(localStorage.getItem('appSettings')) || {});
 
 function anyLessonsRemaining() {
   const maxWeek = getMaxWeek();
@@ -569,20 +569,20 @@ function bindWeekHeaderHandlers(){
    ========================================================================== */
 
 function updateSettingsIcons() {
-    // Toggle the iOS Sliders
+    // THE FIX: Use strict booleans (!!) so the sliders never "blindly flip"
     document.getElementById('switch-sound').classList.toggle('on', !userSettings.muted);
-    document.getElementById('switch-haptics').classList.toggle('on', userSettings.haptics);
-    document.getElementById('switch-turbo').classList.toggle('on', userSettings.turbo);
-    document.getElementById('switch-reveal').classList.toggle('on', userSettings.autoReveal);
-    document.getElementById('switch-dark').classList.toggle('on', userSettings.darkMode);
+    document.getElementById('switch-haptics').classList.toggle('on', !!userSettings.haptics);
+    document.getElementById('switch-turbo').classList.toggle('on', !!userSettings.turbo);
+    document.getElementById('switch-reveal').classList.toggle('on', !!userSettings.autoReveal);
+    document.getElementById('switch-dark').classList.toggle('on', !!userSettings.darkMode);
 
     if(!navigator.vibrate) {
         const hapticsRow = document.getElementById('row-haptics');
         if(hapticsRow) hapticsRow.style.display = 'none';
     }
 
-    document.documentElement.classList.toggle('dark-mode', userSettings.darkMode);
-    document.body.classList.toggle('dark-mode', userSettings.darkMode);
+    document.documentElement.classList.toggle('dark-mode', !!userSettings.darkMode);
+    document.body.classList.toggle('dark-mode', !!userSettings.darkMode);
 }
 
 function toggleSound() { userSettings.muted = !userSettings.muted; saveSettings(); updateSettingsIcons(); }
