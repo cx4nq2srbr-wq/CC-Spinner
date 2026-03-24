@@ -685,14 +685,14 @@ function handleReelScroll(e) {
         
         if (el.id === 'scrollSubject' && reviewSubjectIdx !== idx) {
             reviewSubjectIdx = Math.max(0, Math.min(idx, subjects.length - 1));
-            localStorage.setItem('reviewSubjectIdx', reviewSubjectIdx); // SAVE HERE
             updateReviewDisplay();
-            if(userSettings.haptics) navigator.vibrate(10);
+            // THE FIX: Added navigator.vibrate safety check for iOS
+            if(userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
         } else if (el.id === 'scrollWeek' && reviewWeekIdx !== idx) {
             reviewWeekIdx = Math.max(0, Math.min(idx, weeks.length - 1));
-            localStorage.setItem('reviewWeekIdx', reviewWeekIdx); // SAVE HERE
             updateReviewDisplay();
-            if(userSettings.haptics) navigator.vibrate(10);
+            // THE FIX: Added navigator.vibrate safety check for iOS
+            if(userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
         }
     }, 150);
 }
@@ -759,13 +759,12 @@ function closePicker() {
 function selectPickerItem(idx) {
     if (currentPickerType === 'subject') {
         reviewSubjectIdx = idx;
-        localStorage.setItem('reviewSubjectIdx', idx); // SAVE HERE
     } else {
         reviewWeekIdx = idx;
-        localStorage.setItem('reviewWeekIdx', idx); // SAVE HERE
     }
     updateReviewDisplay();
-    if(userSettings.haptics) navigator.vibrate(20);
+    // THE FIX: Safely check for vibration support so iOS doesn't crash before closing the menu
+    if(userSettings.haptics && navigator.vibrate) navigator.vibrate(20);
     closePicker();
 }
 
