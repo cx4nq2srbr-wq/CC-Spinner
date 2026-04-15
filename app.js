@@ -4,14 +4,39 @@
 let currentMode = 'spinner'; 
 
 function switchMode(mode) {
-    currentMode = mode;
-    
-    // Toggle actual pages
+    stopVoiceover();
+    // Toggle actual main pages
     document.getElementById('spinnerContainer').classList.toggle('active', mode === 'spinner');
     document.getElementById('reviewContainer').classList.toggle('active', mode === 'review');
     document.getElementById('gridContainer').classList.toggle('active', mode === 'grid');
     document.getElementById('settingsContainer').classList.toggle('active', mode === 'settings');
 
+    // Handle Challenge sub-pages (Fixes the overlap!)
+    const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer'];
+    
+    if (mode === 'challenge') {
+        // Reactivate the specific challenge page they left off on
+        const target = document.getElementById(activeChallengePage);
+        if (target) target.classList.add('active');
+        
+        // Trigger the finishing popup if the timer ran out while they were away
+        if (pendingTAFinish) {
+            endTimeAttack();
+            pendingTAFinish = false;
+        }
+    } else {
+        // Save which challenge page is currently open, then hide it
+        challengeIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.classList.contains('active')) {
+                activeChallengePage = id; // Remember for later
+                el.classList.remove('active');
+            }
+        });
+    }
+
+    currentMode = mode;
+    
     // Handle nav bar highlighting
     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
     const activeNav = document.getElementById('nav-' + mode);
@@ -24,6 +49,8 @@ function switchMode(mode) {
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let isSpinning = false;
+let activeChallengePage = 'challengeContainer'; // Remembers if they were in a menu or a game
+let pendingTAFinish = false; // Flags if the timer hit 0 on another tab
 let lastSpun = null; // The one we just spun (the "mistake")
 let previousSpun = null;  // The one BEFORE that (the "rewind destination")
 
@@ -67,13 +94,17 @@ let gridState = localStorage.getItem(getPrefix() + 'ccSpinnerProgress') ?
                 JSON.parse(localStorage.getItem(getPrefix() + 'ccSpinnerProgress')) : {};
 
 let allowedWeeks = localStorage.getItem(getPrefix() + 'ccAllowedWeeks') ? 
-                   JSON.parse(localStorage.getItem(getPrefix() + 'ccAllowedWeeks')) : [];
+                JSON.parse(localStorage.getItem(getPrefix() + 'ccAllowedWeeks')) : [];
 
 let blockedWeeks = localStorage.getItem(getPrefix() + 'ccBlockedWeeks') ? 
-                   JSON.parse(localStorage.getItem(getPrefix() + 'ccBlockedWeeks')) : [];
+                JSON.parse(localStorage.getItem(getPrefix() + 'ccBlockedWeeks')) : [];
 
 let blockedSubjects = localStorage.getItem(getPrefix() + 'ccBlockedSubjects') ? 
-                   JSON.parse(localStorage.getItem(getPrefix() + 'ccBlockedSubjects')) : [];
+                JSON.parse(localStorage.getItem(getPrefix() + 'ccBlockedSubjects')) : [];
+
+let mistakesBank = localStorage.getItem(getPrefix() + 'ccMistakesBank') ? 
+                JSON.parse(localStorage.getItem(getPrefix() + 'ccMistakesBank')) : [];
+
 let savedMaxWeek = localStorage.getItem(getPrefix() + 'ccMaxWeek');
 
 // Global User Settings
@@ -126,7 +157,10 @@ function changeCycle(cycleNum) {
     
     blockedSubjects = localStorage.getItem(getPrefix() + 'ccBlockedSubjects') ? 
                    JSON.parse(localStorage.getItem(getPrefix() + 'ccBlockedSubjects')) : [];               
-    // If it's a fresh cycle, initialize it
+    
+    mistakesBank = localStorage.getItem(getPrefix() + 'ccMistakesBank') ? 
+                   JSON.parse(localStorage.getItem(getPrefix() + 'ccMistakesBank')) : [];
+
     if (Object.keys(gridState).length === 0) {
         subjects.forEach(s => {
             gridState[s] = {};
@@ -141,6 +175,7 @@ function changeCycle(cycleNum) {
     if (currentMode === 'review') {
         updateReviewDisplay();
     }
+    updateFlagUI();
 }
 
 // --- Window Load & App Config ---
@@ -171,6 +206,7 @@ window.onload = function() {
     .then(r => r.ok ? r.json() : Promise.reject())
     .then(m => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = m.version; })
     .catch(() => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = "not available"; });
+    updateFlagUI();
 };
 
 function saveToDevice() {
@@ -180,6 +216,7 @@ function saveToDevice() {
   localStorage.setItem(prefix + 'ccAllowedWeeks', JSON.stringify(allowedWeeks));
   localStorage.setItem(prefix + 'ccBlockedWeeks', JSON.stringify(blockedWeeks));
   localStorage.setItem(prefix + 'ccBlockedSubjects', JSON.stringify(blockedSubjects));
+  localStorage.setItem(prefix + 'ccMistakesBank', JSON.stringify(mistakesBank));
 }
 
 function updateVh() { 
@@ -193,8 +230,8 @@ updateVh();
    ========================================================================== */
 
 function spinBoth() {
+    stopVoiceover();
   if (getSpinLabel().toLowerCase() === 'done') { finishLesson(); return; }
-  if (getSpinLabel() === "Reset") { showResetConfirm(); return; }
 
   if (isSpinning) return;
   if (userSettings.haptics && navigator.vibrate) navigator.vibrate(15); 
@@ -205,11 +242,15 @@ function spinBoth() {
   );
 
   if (availableSubjects.length === 0) {
-    setSpinLabel('Reset');
-    spinBtn.style.background = "#64748b";
-    spinBtn.style.fontSize = "14px";
-    return;
-  }
+        setSpinLabel('Done');
+        const sBtn = document.getElementById('spinBtn');
+        if(sBtn) {
+            sBtn.style.background = '#22c55e';
+            sBtn.style.fontSize = '14px';
+        }
+        finishLesson(); // Pop the confetti and show the Reset box!
+        return;
+    }
 
   // Lock State
   isSpinning = true;
@@ -217,6 +258,8 @@ function spinBoth() {
   toggleBtn.disabled = true;
   undoBtn.disabled = true;
   
+  document.getElementById('flagBtn').disabled = true;
+
   toggleBtn.textContent = '▼ Show Answer ▼';
   document.getElementById('answerContainer').classList.remove('open');
   ansDiv.textContent = "";
@@ -260,6 +303,8 @@ function spinBoth() {
       promptDiv.textContent = lesson.p;
       ansDiv.innerHTML = lesson.a;
       
+      prepVoiceover(subject, week, 'audioBtnMain');
+
       // Handle Auto-Reveal
       if (userSettings.autoReveal) {
           document.getElementById('answerContainer').classList.add('open');
@@ -296,7 +341,8 @@ function spinBoth() {
       isSpinning = false;
       spinBtn.disabled = false;
       toggleBtn.disabled = false;
-      undoBtn.disabled = false; 
+      undoBtn.disabled = false;
+      updateFlagUI();
     }
   }, finalTimeout);
 }
@@ -348,6 +394,7 @@ function toggleAnswer() {
 }
 
 function undoLastSpin() {
+    stopVoiceover();
     if (!lastSpun) return;
 
     // 1. Put the "mistake" back on the grid
@@ -381,6 +428,8 @@ function undoLastSpin() {
         });
 
         void subReel.offsetHeight; 
+        
+        prepVoiceover(previousSpun.subject, previousSpun.week, 'audioBtnMain');
 
         subReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
         weekReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
@@ -406,8 +455,95 @@ function undoLastSpin() {
     document.getElementById('undoBtn').disabled = true;
     
     if (userSettings.haptics && navigator.vibrate) navigator.vibrate(40);
+    updateFlagUI();
     saveToDevice();
     buildGrid();
+}
+
+// NEW: Flagging Logic
+function toggleMistake() {
+    if (!lastSpun) return;
+    
+    // Check if the current lesson is already in the bank
+    const idx = mistakesBank.findIndex(m => m.subject === lastSpun.subject && m.week === lastSpun.week);
+    
+    if (idx !== -1) {
+        mistakesBank.splice(idx, 1); // Remove it
+    } else {
+        mistakesBank.push({ subject: lastSpun.subject, week: lastSpun.week }); // Add it
+        if (userSettings.haptics && navigator.vibrate) navigator.vibrate([20, 50, 20]); // Double buzz!
+    }
+    
+    saveToDevice();
+    updateFlagUI();
+}
+
+// NEW: Flagging from Review Mode
+function toggleMistakeFromReview() {
+    const subject = subjects[reviewSubjectIdx];
+    const week = weeks[reviewWeekIdx];
+
+    const idx = mistakesBank.findIndex(m => m.subject === subject && m.week === week);
+    
+    if (idx !== -1) {
+        mistakesBank.splice(idx, 1);
+    } else {
+        mistakesBank.push({ subject, week });
+        if (userSettings.haptics && navigator.vibrate) navigator.vibrate([20, 50, 20]);
+    }
+    
+    saveToDevice();
+    updateFlagUI(); 
+}
+
+function updateFlagUI() {
+    // 1. Sync Main Spinner Flag
+    const flagBtn = document.getElementById('flagBtn');
+    if (flagBtn) {
+        if (!lastSpun) {
+            flagBtn.disabled = true;
+            flagBtn.classList.remove('flagged');
+        } else {
+            flagBtn.disabled = false;
+            const isFlagged = mistakesBank.some(m => m.subject === lastSpun.subject && m.week === lastSpun.week);
+            flagBtn.classList.toggle('flagged', isFlagged);
+        }
+    }
+
+    // 2. Sync Review Mode Flag
+    const reviewFlagBtn = document.getElementById('reviewFlagBtn');
+    if (reviewFlagBtn) {
+        const subject = subjects[reviewSubjectIdx];
+        const week = weeks[reviewWeekIdx];
+        const isFlagged = mistakesBank.some(m => m.subject === subject && m.week === week);
+        reviewFlagBtn.classList.toggle('flagged', isFlagged);
+    }
+
+    // 3. Sync Notification Badges
+    updateBadgeCounts();
+}
+
+function updateBadgeCounts() {
+    const count = mistakesBank.length;
+    const navBadge = document.getElementById('navMistakeBadge');
+    const menuBadge = document.getElementById('menuMistakeBadge');
+    
+    if (navBadge) {
+        const oldText = navBadge.textContent;
+        navBadge.textContent = count;
+        navBadge.style.display = count > 0 ? 'flex' : 'none';
+        
+        // Satisfying "pop" animation when the number goes up!
+        if (count > parseInt(oldText || 0)) {
+            navBadge.style.transform = 'scale(1.4)';
+            setTimeout(() => navBadge.style.transform = 'scale(1)', 200);
+        }
+    }
+    
+    if (menuBadge) {
+        menuBadge.textContent = count;
+        menuBadge.style.display = count > 0 ? 'flex' : 'none';
+    }
 }
 
 /* ==========================================================================
@@ -644,76 +780,41 @@ function resetGridConfirmed() {
    ========================================================================== */
 let reviewSubjectIdx = localStorage.getItem('reviewSubjectIdx') ? parseInt(localStorage.getItem('reviewSubjectIdx')) : 0;
 let reviewWeekIdx = localStorage.getItem('reviewWeekIdx') ? parseInt(localStorage.getItem('reviewWeekIdx')) : 0;
-let scrollTimeout;
 
 function initReviewMode() {
-    const subReel = document.getElementById('reviewSubjectReel');
-    const weekReel = document.getElementById('reviewWeekReel');
-    const scrollSub = document.getElementById('scrollSubject');
-    const scrollWeek = document.getElementById('scrollWeek');
-
-    subReel.innerHTML = "";
-    subjects.forEach(s => {
-        const div = document.createElement("div");
-        div.textContent = `${subjectIcons[s]} ${s}`;
-        subReel.appendChild(div);
-    });
-
-    weekReel.innerHTML = "";
-    weeks.forEach(w => {
-        const div = document.createElement("div");
-        div.textContent = "Week " + w;
-        weekReel.appendChild(div);
-    });
-
-    // Attach native scroll listeners to track finger swipes
-    if (!scrollSub.dataset.listening) {
-        scrollSub.addEventListener('scroll', handleReelScroll);
-        scrollWeek.addEventListener('scroll', handleReelScroll);
-        scrollSub.dataset.listening = "true";
-    }
-
     updateReviewDisplay();
 }
 
-function handleReelScroll(e) {
-    clearTimeout(scrollTimeout);
-    // Wait for the finger swipe/bounce to finish before updating the screen
-    scrollTimeout = setTimeout(() => {
-        const el = e.target;
-        const idx = Math.round(el.scrollTop / 80);
-        
-        if (el.id === 'scrollSubject' && reviewSubjectIdx !== idx) {
-            reviewSubjectIdx = Math.max(0, Math.min(idx, subjects.length - 1));
-            updateReviewDisplay();
-            // THE FIX: Added navigator.vibrate safety check for iOS
-            if(userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
-        } else if (el.id === 'scrollWeek' && reviewWeekIdx !== idx) {
-            reviewWeekIdx = Math.max(0, Math.min(idx, weeks.length - 1));
-            updateReviewDisplay();
-            // THE FIX: Added navigator.vibrate safety check for iOS
-            if(userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
-        }
-    }, 150);
+// Direction is 1 (Next) or -1 (Prev)
+function changeReviewSubject(dir) {
+    // Math logic to perfectly loop around the array if they go past the ends
+    reviewSubjectIdx = (reviewSubjectIdx + dir + subjects.length) % subjects.length;
+    if(userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    updateReviewDisplay();
+}
+
+function changeReviewWeek(dir) {
+    reviewWeekIdx = (reviewWeekIdx + dir + weeks.length) % weeks.length;
+    if(userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    updateReviewDisplay();
 }
 
 function updateReviewDisplay() {
+    stopVoiceover();
     const subject = subjects[reviewSubjectIdx];
     const week = weeks[reviewWeekIdx];
     const lesson = lessonData[subject][week];
 
-    // Safely force scroll position if it was changed via the Modal or Cycle change
-    const scrollSub = document.getElementById('scrollSubject');
-    const scrollWeek = document.getElementById('scrollWeek');
-    if (Math.round(scrollSub.scrollTop / 80) !== reviewSubjectIdx) {
-        scrollSub.scrollTo({ top: reviewSubjectIdx * 80, behavior: 'smooth' });
-    }
-    if (Math.round(scrollWeek.scrollTop / 80) !== reviewWeekIdx) {
-        scrollWeek.scrollTo({ top: reviewWeekIdx * 80, behavior: 'smooth' });
-    }
+    // Update Text Labels
+    document.getElementById('reviewSubjectLabel').innerHTML = `${subjectIcons[subject]} ${subject}`;
+    document.getElementById('reviewWeekLabel').textContent = `Week ${week}`;
 
+    // Update Card Content
     document.getElementById('reviewPrompt').textContent = lesson.p;
     document.getElementById('reviewAnswerContent').innerHTML = lesson.a;
+
+    prepVoiceover(subject, week, 'audioBtnReview');
+    updateFlagUI(); // Ensure flag color updates when scrolling!
 }
 
 // --- Quick Picker Modal Logic ---
@@ -731,9 +832,8 @@ function openPicker(type) {
         grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(100px, 1fr))';
         subjects.forEach((s, i) => {
             const btn = document.createElement('button');
-            // THE FIX: Using clean CSS classes instead of hardcoded inline styles!
             btn.className = `picker-btn ${i === reviewSubjectIdx ? 'selected' : ''}`;
-            btn.innerHTML = `${subjectIcons[s]} ${s}`;
+            btn.innerHTML = `<span style="display: block; font-size: 24px; margin-bottom: 4px;">${subjectIcons[s]}</span><span style="line-height: 1.2;">${s}</span>`;
             btn.onclick = () => selectPickerItem(i);
             grid.appendChild(btn);
         });
@@ -806,8 +906,8 @@ function hideDoneOverlay() {
     overlay.style.pointerEvents = 'none'; 
 }
 
-function startConfetti() {
-    const canvas = document.getElementById('confettiCanvas');
+function startConfetti(canvasId = 'confettiCanvas') {
+    const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     isConfettiStopping = false;
@@ -875,7 +975,7 @@ function startConfetti() {
     confettiAnimationId = requestAnimationFrame(frame);
 }
 
-function stopConfetti() {
+function stopConfetti(canvasId = 'confettiCanvas') {
     if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
     confettiAnimationId = null;
     confettiParticles = null;
@@ -885,19 +985,22 @@ function stopConfetti() {
         confettiResizeHandler = null;
     }
     
-    const canvas = document.getElementById('confettiCanvas');
+    const canvas = document.getElementById(canvasId);
     if (canvas) {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    const overlay = document.getElementById('doneOverlay');
-    if (overlay) {
-        overlay.style.display = 'none';
-        overlay.style.background = 'rgba(0,0,0,0.45)';
-        overlay.style.pointerEvents = 'auto';
-        const box = overlay.querySelector('.doneBox');
-        if (box) box.style.display = 'block';
+    // Only hide the Main Grid doneOverlay if we are running the main game confetti
+    if (canvasId === 'confettiCanvas') {
+        const overlay = document.getElementById('doneOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+            overlay.style.background = 'rgba(0,0,0,0.45)';
+            overlay.style.pointerEvents = 'auto';
+            const box = overlay.querySelector('.doneBox');
+            if (box) box.style.display = 'block';
+        }
     }
 }
 
@@ -926,10 +1029,448 @@ if ('serviceWorker' in navigator) {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            if (confirm("New version available! Update now?")) window.location.reload();
+            alert("New version available! Click OK to update."); 
+            window.location.reload();
           }
         });
       });
     });
   });
+}
+
+/* ==========================================================================
+   11. CHALLENGE MODES (Review Mistakes)
+   ========================================================================== */
+let mistakeQueue = [];
+let currentMistake = null;
+let isMistakeSpinning = false;
+
+function startMistakeReview() {
+    if (mistakesBank.length === 0) {
+        alert("Great job! Your mistakes bank is currently empty.");
+        return;
+    }
+
+    // Hide challenge menu, show game
+    document.getElementById('challengeContainer').classList.remove('active');
+    document.getElementById('mistakeGameContainer').classList.add('active');
+
+    // Shuffle the mistakes into a fresh deck for this session
+    mistakeQueue = [...mistakesBank].sort(() => Math.random() - 0.5);
+    
+    spinNextMistake();
+}
+
+function exitMistakeReview() {
+    stopVoiceover();
+    document.getElementById('mistakeGameContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+}
+
+function spinNextMistake() {
+    stopVoiceover();
+    if (mistakeQueue.length === 0) {
+        finishMistakeReview();
+        return;
+    }
+
+    isMistakeSpinning = true;
+    currentMistake = mistakeQueue.shift(); // Pull the top card off the deck
+
+    document.getElementById('mistakesRemaining').textContent = `Remaining: ${mistakeQueue.length + 1}`;
+    
+    // Reset UI for the spin
+    document.getElementById('mistakeNeedsWorkBtn').disabled = true;
+    document.getElementById('mistakeCorrectBtn').disabled = true;
+    document.getElementById('mistakeNeedsWorkBtn').style.opacity = '0.5';
+    document.getElementById('mistakeCorrectBtn').style.opacity = '0.5';
+    document.getElementById('mistakePrompt').textContent = "";
+    document.getElementById('mistakeAnswerContent').innerHTML = "";
+    document.getElementById('mistakeAnswerContainer').classList.remove('open');
+    document.getElementById('toggleMistakeAnswer').textContent = '▼ Show Answer ▼';
+
+    // Animate the reels using your existing logic
+    const spinDuration = userSettings.turbo ? 500 : 1500;
+    const subItems = subjects.filter(s => s !== currentMistake.subject);
+    const subFill = [];
+    for(let i=0; i<10; i++) subFill.push(subItems[Math.floor(Math.random()*subItems.length)]);
+    
+    const weekFill = [];
+    for(let i=0; i<10; i++) weekFill.push("Week " + (Math.floor(Math.random()*24)+1));
+
+    spinReel("mistakeSubjectReel", subFill, currentMistake.subject, spinDuration);
+    spinReel("mistakeWeekReel", weekFill, "Week " + currentMistake.week, spinDuration + 300);
+
+    setTimeout(() => {
+        if (userSettings.haptics && navigator.vibrate) navigator.vibrate([40, 30, 40]);
+        playSound(988, 'triangle', 0.1, 0.03);
+        
+        const lesson = lessonData[currentMistake.subject][currentMistake.week];
+        document.getElementById('mistakePrompt').textContent = lesson.p;
+        document.getElementById('mistakeAnswerContent').innerHTML = lesson.a;
+
+        if (userSettings.autoReveal) {
+            toggleMistakeAnswerBtn();
+        }
+
+        document.getElementById('mistakeNeedsWorkBtn').disabled = false;
+        document.getElementById('mistakeCorrectBtn').disabled = false;
+        document.getElementById('mistakeNeedsWorkBtn').style.opacity = '1';
+        document.getElementById('mistakeCorrectBtn').style.opacity = '1';
+        isMistakeSpinning = false;
+
+        prepVoiceover(currentMistake.subject, currentMistake.week, 'audioBtnMistake');
+    }, spinDuration + 500);
+}
+
+function toggleMistakeAnswerBtn() {
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    const container = document.getElementById('mistakeAnswerContainer');
+    const btn = document.getElementById('toggleMistakeAnswer');
+    container.classList.toggle('open');
+    btn.textContent = container.classList.contains('open') ? '▲ Hide Answer ▲' : '▼ Show Answer ▼';
+}
+
+function processMistake(isCorrect) {
+    if (isMistakeSpinning) return;
+    
+    if (isCorrect) {
+        // Remove it permanently from the phone's memory
+        const idx = mistakesBank.findIndex(m => m.subject === currentMistake.subject && m.week === currentMistake.week);
+        if (idx !== -1) mistakesBank.splice(idx, 1);
+        saveToDevice();
+    } else {
+        // Shove it to the back of the queue so they have to get it right before winning!
+        mistakeQueue.push(currentMistake);
+    }
+    
+    spinNextMistake();
+    updateFlagUI();
+}
+
+function finishMistakeReview() {
+    playVictoryChime();
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);
+    startConfetti();
+    
+    setTimeout(() => {
+        alert("Deck Cleared! You mastered your mistakes.");
+        stopConfetti();
+        exitMistakeReview();
+    }, 3500);
+}
+
+/* ==========================================================================
+   12. CHALLENGE MODES (Time Attack)
+   ========================================================================== */
+let taTimer = null;
+let taTimeLeft = 0;
+let taTotalStartingTime = 0; // NEW: To calculate elapsed speedrun time
+let taScoreRight = 0;
+let taScoreWrong = 0;
+let taAvailable = [];
+let taCurrent = null;
+
+function openTimeAttackMenu() {
+    document.getElementById('challengeContainer').classList.remove('active');
+    document.getElementById('taMenuContainer').classList.add('active');
+    
+    const reel = document.getElementById('taMinuteReel');
+    if (reel.innerHTML === "") {
+        for(let i=1; i<=30; i++) {
+            const div = document.createElement("div");
+            div.textContent = i;
+            reel.appendChild(div);
+        }
+        // Snap the wheel to 3 minutes by default
+        setTimeout(() => { document.getElementById('taMinuteScroll').scrollTo({ top: 160, behavior: 'auto' }); }, 50); 
+    }
+}
+
+function exitTimeAttackMenu() {
+    document.getElementById('taMenuContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+}
+
+function startTimeAttack() {
+    const scroll = document.getElementById('taMinuteScroll');
+    const minutes = Math.round(scroll.scrollTop / 80) + 1; 
+    
+    taTimeLeft = minutes * 60;
+    taTotalStartingTime = taTimeLeft;
+    taScoreRight = 0;
+    taScoreWrong = 0;
+    document.getElementById('taScoreRight').textContent = "0";
+    document.getElementById('taScoreWrong').textContent = "0";
+    updateTATimerUI();
+
+    // NEW: Build the deck from allowed spaces that are NOT YET COMPLETED!
+    taAvailable = [];
+    const maxLimit = getMaxWeek();
+    subjects.forEach(s => {
+        if (blockedSubjects.includes(s)) return;
+        weeks.forEach(w => {
+            if ((w <= maxLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w]) {
+                taAvailable.push({ subject: s, week: w });
+            }
+        });
+    });
+
+    if (taAvailable.length === 0) {
+        alert("Your grid is already finished! Reset the grid on the Lessons tab to play Time Attack.");
+        return;
+    }
+
+    document.getElementById('taMenuContainer').classList.remove('active');
+    document.getElementById('taGameContainer').classList.add('active');
+    
+    nextTAQuestion();
+    taTimer = setInterval(tickTATimer, 1000);
+}
+
+function tickTATimer() {
+    taTimeLeft--;
+    updateTATimerUI();
+    
+    if (taTimeLeft <= 0) {
+        clearInterval(taTimer);
+        
+        if (currentMode === 'challenge') {
+            endTimeAttack(false); // False = Time ran out naturally
+        } else {
+            pendingTAFinish = true; 
+        }
+    }
+}
+
+function updateTATimerUI() {
+    const m = Math.floor(taTimeLeft / 60).toString().padStart(2, '0');
+    const s = (taTimeLeft % 60).toString().padStart(2, '0');
+    document.getElementById('taTimerDisplay').textContent = `${m}:${s}`;
+}
+
+function nextTAQuestion() {
+    stopVoiceover();
+    if (taAvailable.length === 0) {
+        endTimeAttack(true); // True = They cleared the board early!
+        return;
+    }
+
+    const randIdx = Math.floor(Math.random() * taAvailable.length);
+    taCurrent = taAvailable[randIdx];
+    const lesson = lessonData[taCurrent.subject][taCurrent.week];
+
+    document.getElementById('taSubjectLabel').textContent = `${subjectIcons[taCurrent.subject]} ${taCurrent.subject} - Week ${taCurrent.week}`;
+    document.getElementById('taPrompt').textContent = lesson.p;
+    document.getElementById('taAnswerContent').innerHTML = lesson.a;
+
+    const container = document.getElementById('taAnswerContainer');
+    container.classList.remove('open');
+    document.getElementById('toggleTAAnswer').textContent = '▼ Show Answer ▼';
+    
+    prepVoiceover(taCurrent.subject, taCurrent.week, 'audioBtnTA');
+}
+
+function toggleTAAnswerBtn() {
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    const container = document.getElementById('taAnswerContainer');
+    const btn = document.getElementById('toggleTAAnswer');
+    container.classList.toggle('open');
+    btn.textContent = container.classList.contains('open') ? '▲ Hide Answer ▲' : '▼ Show Answer ▼';
+}
+
+function processTA(isCorrect) {
+    if (taTimeLeft <= 0) return; 
+    
+    if (isCorrect) {
+        taScoreRight++;
+        document.getElementById('taScoreRight').textContent = taScoreRight;
+        
+        // NEW: Mark it complete on the grid!
+        gridState[taCurrent.subject][taCurrent.week] = false;
+        
+        // Handle Latin twin weeks for cycle 2
+        if (taCurrent.subject === "Latin" && currentCycle === 2) {
+            const group = latinTwinGroups.find(g => g.includes(taCurrent.week));
+            if (group) {
+                group.forEach(twinWeek => {
+                    gridState["Latin"][twinWeek] = false;
+                    // Remove twin weeks from the active deck
+                    taAvailable = taAvailable.filter(item => !(item.subject === "Latin" && group.includes(item.week)));
+                });
+            }
+        }
+        
+        // Slice the current lesson completely out of the active deck
+        taAvailable = taAvailable.filter(item => !(item.subject === taCurrent.subject && item.week === taCurrent.week));
+        
+        saveToDevice();
+        buildGrid(); // Update the visual grid silently in the background
+        
+    } else {
+        taScoreWrong++;
+        document.getElementById('taScoreWrong').textContent = taScoreWrong;
+        
+        const idx = mistakesBank.findIndex(m => m.subject === taCurrent.subject && m.week === taCurrent.week);
+        if (idx === -1) {
+            mistakesBank.push({ subject: taCurrent.subject, week: taCurrent.week });
+            saveToDevice();
+            updateFlagUI(); 
+        }
+    }
+    
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(15);
+    nextTAQuestion(); 
+}
+
+function quitTimeAttack() {
+    stopVoiceover();
+    clearInterval(taTimer);
+    document.getElementById('taGameContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+}
+
+function endTimeAttack(clearedBoard = false) {
+    stopVoiceover();
+    clearInterval(taTimer);
+    playVictoryChime();
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);
+    
+    const total = taScoreRight + taScoreWrong;
+    const accuracy = total > 0 ? Math.round((taScoreRight / total) * 100) : 0;
+    
+    const titleEl = document.getElementById('taResultsTitle');
+    const subtitleEl = document.getElementById('taResultsSubtitle');
+    
+    // Handle the early Victory display
+    if (clearedBoard) {
+        const elapsed = taTotalStartingTime - taTimeLeft;
+        const m = Math.floor(elapsed / 60);
+        const s = (elapsed % 60).toString().padStart(2, '0');
+        titleEl.textContent = "Board Cleared!";
+        subtitleEl.textContent = `You finished the lesson in only ${m}:${s}!`;
+        subtitleEl.style.display = 'block';
+
+        // NEW: Automatically reset the grid in the background!
+        subjects.forEach(s => {
+            weeks.forEach(w => gridState[s][w] = true);
+        });
+        saveToDevice();
+        buildGrid();
+        
+        // Ensure the main spinner button resets to "SPIN" (not "DONE")
+        const mainSpinBtn = document.getElementById('spinBtn');
+        if (mainSpinBtn) {
+            mainSpinBtn.style.background = "var(--primary)"; 
+            mainSpinBtn.disabled = false;
+            setSpinLabel('SPIN');
+            mainSpinBtn.style.fontSize = '';
+        }
+
+    } else {
+        titleEl.textContent = "Time's Up!";
+        subtitleEl.style.display = 'none';
+    }
+    
+    document.getElementById('taFinalScore').textContent = `${taScoreRight} / ${total}`;
+    document.getElementById('taAccuracy').textContent = `Accuracy: ${accuracy}%`;
+    
+    document.getElementById('taResultsOverlay').style.display = 'flex';
+    
+    startConfetti('taConfettiCanvas');
+}
+
+function closeTAResults() {
+    stopConfetti('taConfettiCanvas');
+    document.getElementById('taResultsOverlay').style.display = 'none';
+    document.getElementById('taGameContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+}
+
+/* ==========================================================================
+   13. VOICEOVER AUDIO ENGINE
+   ========================================================================== */
+const voiceAudio = new Audio();
+let activeVoiceBtn = null;
+let currentVoiceUrl = "";
+
+// When the audio finishes naturally, flip the pause button back to a play button
+voiceAudio.addEventListener('ended', () => {
+    if (activeVoiceBtn) setAudioIcon(activeVoiceBtn, false);
+    activeVoiceBtn = null;
+});
+
+function prepVoiceover(subject, week, btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    
+    // Reset state
+    btn.style.display = 'none';
+    setAudioIcon(btnId, false);
+    
+    // Construct the file name (e.g., "Math" -> "math", "Timeline" -> "timeline")
+    const cleanSubject = subject.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const url = `audio/c${currentCycle}-${cleanSubject}-w${week}.m4a`;
+
+    // "Ping" the server to see if the file exists without downloading it
+    fetch(url, { method: 'HEAD' })
+        .then(res => {
+            if (res.ok) {
+                btn.dataset.url = url;
+                btn.style.display = 'flex'; // It exists! Show the button.
+                setAudioIcon(btnId, false);
+            }
+        })
+        .catch(e => { /* File missing, keep button hidden */ });
+}
+
+function toggleVoiceover(e, btnId) {
+    if (e) e.stopPropagation(); // Prevents the Answer card from toggling open/closed!
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    
+    const targetUrl = btn.dataset.url;
+    
+    // If clicking the currently playing button, pause it
+    if (activeVoiceBtn === btnId && !voiceAudio.paused) {
+        voiceAudio.pause();
+        setAudioIcon(btnId, false);
+        return;
+    }
+    
+    // If playing a new file, load it
+    if (currentVoiceUrl !== targetUrl) {
+        voiceAudio.src = targetUrl;
+        currentVoiceUrl = targetUrl;
+    }
+    
+    // Reset old button icon if switching to a new card
+    if (activeVoiceBtn && activeVoiceBtn !== btnId) {
+        setAudioIcon(activeVoiceBtn, false);
+    }
+    
+    voiceAudio.play().catch(err => console.error("Audio play failed:", err));
+    activeVoiceBtn = btnId;
+    setAudioIcon(btnId, true);
+}
+
+function setAudioIcon(btnId, isPlaying) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    if (isPlaying) {
+        // Add the playing class (turns the circle red) and show Pause Icon
+        btn.classList.add('playing');
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+    } else {
+        // Remove the playing class and show Play Icon
+        btn.classList.remove('playing');
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+    }
+}
+
+function stopVoiceover() {
+    if (!voiceAudio.paused) {
+        voiceAudio.pause();
+        if (activeVoiceBtn) setAudioIcon(activeVoiceBtn, false);
+    }
 }
