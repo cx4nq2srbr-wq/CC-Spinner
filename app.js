@@ -1090,59 +1090,66 @@ function exitMistakeReview() {
 }
 
 function spinNextMistake() {
-    stopVoiceover();
-    if (mistakeQueue.length === 0) {
-        finishMistakeReview();
-        return;
-    }
-
-    isMistakeSpinning = true;
-    currentMistake = mistakeQueue.shift(); // Pull the top card off the deck
-
-    document.getElementById('mistakesRemaining').textContent = `Remaining: ${mistakeQueue.length + 1}`;
-    
-    // Reset UI for the spin
-    document.getElementById('mistakeNeedsWorkBtn').disabled = true;
-    document.getElementById('mistakeCorrectBtn').disabled = true;
-    document.getElementById('mistakeNeedsWorkBtn').style.opacity = '0.5';
-    document.getElementById('mistakeCorrectBtn').style.opacity = '0.5';
-    document.getElementById('mistakePrompt').textContent = "";
-    document.getElementById('mistakeAnswerContent').innerHTML = "";
-    document.getElementById('mistakeAnswerContainer').classList.remove('open');
-    document.getElementById('toggleMistakeAnswer').textContent = '▼ Show Answer ▼';
-
-    // Animate the reels using your existing logic
-    const spinDuration = userSettings.turbo ? 500 : 1500;
-    const subItems = subjects.filter(s => s !== currentMistake.subject);
-    const subFill = [];
-    for(let i=0; i<10; i++) subFill.push(subItems[Math.floor(Math.random()*subItems.length)]);
-    
-    const weekFill = [];
-    for(let i=0; i<10; i++) weekFill.push("Week " + (Math.floor(Math.random()*24)+1));
-
-    spinReel("mistakeSubjectReel", subFill, currentMistake.subject, spinDuration);
-    spinReel("mistakeWeekReel", weekFill, "Week " + currentMistake.week, spinDuration + 300);
-
-    setTimeout(() => {
-        if (userSettings.haptics && navigator.vibrate) navigator.vibrate([40, 30, 40]);
-        playSound(988, 'triangle', 0.1, 0.03);
+    try {
+        stopVoiceover(); 
         
+        // 1. Check if the deck is empty
+        if (!mistakeQueue || mistakeQueue.length === 0) {
+            finishMistakeReview();
+            return;
+        }
+
+        // 2. Pull the next card
+        currentMistake = mistakeQueue.shift(); 
+        
+        // 3. Auto-Heal: If the phone's memory saved a blank mistake, skip it!
+        if (!currentMistake || !currentMistake.subject || !currentMistake.week) {
+            console.warn("Skipped corrupted mistake data:", currentMistake);
+            spinNextMistake(); 
+            return;
+        }
+
+        // 4. Update the text labels safely
+        const remainingEl = document.getElementById('mistakesRemaining');
+        if (remainingEl) remainingEl.textContent = `Remaining: ${mistakeQueue.length + 1}`;
+        
+        const labelEl = document.getElementById('mistakeSubjectLabel');
+        if (labelEl) labelEl.textContent = `${subjectIcons[currentMistake.subject]} ${currentMistake.subject} - Week ${currentMistake.week}`;
+        
+        // 5. Fetch the actual lesson text
         const lesson = lessonData[currentMistake.subject][currentMistake.week];
+        if (!lesson) throw new Error("Lesson data not found for this week.");
+        
         document.getElementById('mistakePrompt').textContent = lesson.p;
         document.getElementById('mistakeAnswerContent').innerHTML = lesson.a;
+
+        // 6. Reset UI states
+        document.getElementById('mistakeAnswerContainer').classList.remove('open');
+        document.getElementById('toggleMistakeAnswer').textContent = '▼ Show Answer ▼';
 
         if (userSettings.autoReveal) {
             toggleMistakeAnswerBtn();
         }
 
-        document.getElementById('mistakeNeedsWorkBtn').disabled = false;
-        document.getElementById('mistakeCorrectBtn').disabled = false;
-        document.getElementById('mistakeNeedsWorkBtn').style.opacity = '1';
-        document.getElementById('mistakeCorrectBtn').style.opacity = '1';
-        isMistakeSpinning = false;
+        // 7. Light up the buttons
+        const needsWorkBtn = document.getElementById('mistakeNeedsWorkBtn');
+        const correctBtn = document.getElementById('mistakeCorrectBtn');
+        
+        if (needsWorkBtn) { needsWorkBtn.disabled = false; needsWorkBtn.style.opacity = '1'; }
+        if (correctBtn) { correctBtn.disabled = false; correctBtn.style.opacity = '1'; }
 
+        // 8. Prep Audio
         prepVoiceover(currentMistake.subject, currentMistake.week, 'audioBtnMistake');
-    }, spinDuration + 500);
+        
+    } catch (error) {
+        console.error("Mistake Review Crash:", error);
+        alert("Oops! A corrupted lesson got stuck in the deck. We've cleared the error, please try again.");
+        // Purge the corrupt memory bank and reset
+        mistakesBank = [];
+        saveToDevice();
+        updateFlagUI();
+        exitMistakeReview();
+    }
 }
 
 function toggleMistakeAnswerBtn() {
