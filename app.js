@@ -5,23 +5,43 @@ let currentMode = 'spinner';
 
 function switchMode(mode) {
     stopVoiceover();
+    const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer'];
+
+    // THE FIX: Double-tap logic to return to the Focus menu
+    if (mode === 'challenge' && currentMode === 'challenge') {
+        challengeIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        document.getElementById('challengeContainer').classList.add('active');
+        activeChallengePage = 'challengeContainer';
+        
+        // Ensure pause triggers if we back out of the game
+        if (typeof pauseTimeAttack === "function") pauseTimeAttack(); 
+        return; 
+    }
+
     // Toggle actual main pages
     document.getElementById('spinnerContainer').classList.toggle('active', mode === 'spinner');
     document.getElementById('reviewContainer').classList.toggle('active', mode === 'review');
     document.getElementById('gridContainer').classList.toggle('active', mode === 'grid');
     document.getElementById('settingsContainer').classList.toggle('active', mode === 'settings');
 
-    // Handle Challenge sub-pages (Fixes the overlap!)
-    const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer'];
-    
     if (mode === 'challenge') {
+        // THE FIX: Force clear all challenge pages first so they don't overlap!
+        challengeIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        
         // Reactivate the specific challenge page they left off on
-        const target = document.getElementById(activeChallengePage);
+        const target = document.getElementById(activeChallengePage || 'challengeContainer');
         if (target) target.classList.add('active');
         
-        // Trigger the finishing popup if the timer ran out while they were away
+        if (typeof resumeTimeAttack === "function") resumeTimeAttack(); // Automatically unpause!
+        
         if (pendingTAFinish) {
-            endTimeAttack();
+            endTimeAttack(false);
             pendingTAFinish = false;
         }
     } else {
@@ -33,6 +53,7 @@ function switchMode(mode) {
                 el.classList.remove('active');
             }
         });
+        if (typeof pauseTimeAttack === "function") pauseTimeAttack(); // Automatically pause!
     }
 
     currentMode = mode;
@@ -1062,9 +1083,10 @@ function startMistakeReview() {
 }
 
 function exitMistakeReview() {
-    stopVoiceover();
+    stopVoiceover(); 
     document.getElementById('mistakeGameContainer').classList.remove('active');
     document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer'; // THE FIX
 }
 
 function spinNextMistake() {
@@ -1166,11 +1188,12 @@ function closeMistakeResults() {
    ========================================================================== */
 let taTimer = null;
 let taTimeLeft = 0;
-let taTotalStartingTime = 0; // NEW: To calculate elapsed speedrun time
+let taTotalStartingTime = 0;
 let taScoreRight = 0;
 let taScoreWrong = 0;
 let taAvailable = [];
 let taCurrent = null;
+let isTAPaused = false;
 
 function openTimeAttackMenu() {
     document.getElementById('challengeContainer').classList.remove('active');
@@ -1178,7 +1201,7 @@ function openTimeAttackMenu() {
     
     const reel = document.getElementById('taMinuteReel');
     if (reel.innerHTML === "") {
-        for(let i=1; i<=30; i++) {
+        for(let i=1; i<=60; i++) {
             const div = document.createElement("div");
             div.textContent = i;
             reel.appendChild(div);
@@ -1191,6 +1214,7 @@ function openTimeAttackMenu() {
 function exitTimeAttackMenu() {
     document.getElementById('taMenuContainer').classList.remove('active');
     document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer'; // THE FIX
 }
 
 function startTimeAttack() {
@@ -1205,7 +1229,21 @@ function startTimeAttack() {
     document.getElementById('taScoreWrong').textContent = "0";
     updateTATimerUI();
 
-    // NEW: Build the deck from allowed spaces that are NOT YET COMPLETED!
+function pauseTimeAttack() {
+    if (taTimer && taTimeLeft > 0) {
+        clearInterval(taTimer);
+        taTimer = null;
+        isTAPaused = true;
+    }
+}
+
+function resumeTimeAttack() {
+    if (isTAPaused && activeChallengePage === 'taGameContainer') {
+        taTimer = setInterval(tickTATimer, 1000);
+        isTAPaused = false;
+    }
+}
+
     taAvailable = [];
     const maxLimit = getMaxWeek();
     subjects.forEach(s => {
@@ -1287,7 +1325,7 @@ function processTA(isCorrect) {
         taScoreRight++;
         document.getElementById('taScoreRight').textContent = taScoreRight;
         
-        // NEW: Mark it complete on the grid!
+        // Mark it complete on the grid!
         gridState[taCurrent.subject][taCurrent.week] = false;
         
         // Handle Latin twin weeks for cycle 2
@@ -1301,9 +1339,6 @@ function processTA(isCorrect) {
                 });
             }
         }
-        
-        // Slice the current lesson completely out of the active deck
-        taAvailable = taAvailable.filter(item => !(item.subject === taCurrent.subject && item.week === taCurrent.week));
         
         saveToDevice();
         buildGrid(); // Update the visual grid silently in the background
@@ -1320,15 +1355,20 @@ function processTA(isCorrect) {
         }
     }
     
+    taAvailable = taAvailable.filter(item => !(item.subject === taCurrent.subject && item.week === taCurrent.week));
+    
     if (userSettings.haptics && navigator.vibrate) navigator.vibrate(15);
     nextTAQuestion(); 
 }
 
 function quitTimeAttack() {
-    stopVoiceover();
+    stopVoiceover(); 
     clearInterval(taTimer);
+    taTimer = null;
+    isTAPaused = false; // THE FIX
     document.getElementById('taGameContainer').classList.remove('active');
     document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer'; // THE FIX
 }
 
 function endTimeAttack(clearedBoard = false) {
@@ -1386,6 +1426,7 @@ function closeTAResults() {
     document.getElementById('taResultsOverlay').style.display = 'none';
     document.getElementById('taGameContainer').classList.remove('active');
     document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer'; // THE FIX
 }
 
 /* ==========================================================================
@@ -1395,7 +1436,6 @@ const voiceAudio = new Audio();
 let activeVoiceBtn = null;
 let currentVoiceUrl = "";
 
-// When the audio finishes naturally, flip the pause button back to a play button
 voiceAudio.addEventListener('ended', () => {
     if (activeVoiceBtn) setAudioIcon(activeVoiceBtn, false);
     activeVoiceBtn = null;
