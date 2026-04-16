@@ -1365,15 +1365,20 @@ function quitTimeAttack() {
     stopVoiceover(); 
     clearInterval(taTimer);
     taTimer = null;
-    isTAPaused = false; // THE FIX
+    isTAPaused = false;
     document.getElementById('taGameContainer').classList.remove('active');
     document.getElementById('challengeContainer').classList.add('active');
-    activeChallengePage = 'challengeContainer'; // THE FIX
+    activeChallengePage = 'challengeContainer';
 }
 
 function endTimeAttack(clearedBoard = false) {
     stopVoiceover();
     clearInterval(taTimer);
+
+    taTimer = null;         
+    taTimeLeft = 0;         
+    isTAPaused = false;
+
     playVictoryChime();
     if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);
     
