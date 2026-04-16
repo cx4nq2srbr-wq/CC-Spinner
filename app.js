@@ -1150,14 +1150,15 @@ function processMistake(isCorrect) {
 
 function finishMistakeReview() {
     playVictoryChime();
-    if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);
-    startConfetti();
-    
-    setTimeout(() => {
-        alert("Deck Cleared! You mastered your mistakes.");
-        stopConfetti();
-        exitMistakeReview();
-    }, 3500);
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);    
+    document.getElementById('mistakeResultsOverlay').style.display = 'flex';
+    startConfetti('mistakeConfettiCanvas');
+}
+
+function closeMistakeResults() {
+    stopConfetti('mistakeConfettiCanvas');
+    document.getElementById('mistakeResultsOverlay').style.display = 'none';
+    exitMistakeReview();
 }
 
 /* ==========================================================================
