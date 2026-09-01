@@ -1,17 +1,23 @@
-const CACHE_NAME = 'cc-spinner-v3.2.2'; // Increment this (v1.1, v1.2) to force an update
+const CACHE_NAME = 'cc-spinner-v4.2.4'; // Bumped version to trigger this new update!
 const ASSETS = [
   './',
   './index.html',
+  './styles.css',
+  './app.js',
+  './data.js',
+  './map-c2-europe.js',
   './manifest.json',
   './icon.png'
 ];
 
-// 1. Install & Skip Waiting
+// 1. Install (Aggressive Update: Force the new version to skip the waiting room!)
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // THE FIX: Instantly take over!
+  
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting()) // Forces the new service worker to take over
+    })
   );
 });
 
@@ -31,7 +37,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Network-First Strategy (The Fix)
+// 3. Network-First Strategy
 // This checks the internet for the new HTML first. If offline, it uses the cache.
 self.addEventListener('fetch', (event) => {
   event.respondWith(

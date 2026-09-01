@@ -3,8 +3,7 @@
 <head>
   <meta name="theme-color" content="#ff6f61">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CC Spinner">
   
@@ -34,6 +33,7 @@
 
   <div id="answerContainer">
     <button id="toggleAnswer" onclick="toggleAnswer()">▼ Show Answer ▼</button>
+    <button id="infoBtnMain" class="info-btn" onclick="openInfoModal(event, 'infoBtnMain')">i</button>
     <button id="audioBtnMain" class="audio-btn" onclick="toggleVoiceover(event, 'audioBtnMain')"></button>
     <div id="answerContent"></div>
   </div>
@@ -90,6 +90,7 @@
         
         <div id="reviewAnswerContainer">
             <div class="answer-header-static">ANSWER</div>
+            <button id="infoBtnReview" class="info-btn" onclick="openInfoModal(event, 'infoBtnReview')">i</button>
             <button id="audioBtnReview" class="audio-btn" onclick="toggleVoiceover(event, 'audioBtnReview')"></button>
             <div id="reviewAnswerContent"></div>
         </div>
@@ -152,6 +153,22 @@
             </div>
             <div style="font-size: 26px;">⏱️</div>
         </button>
+
+        <button class="setting-item" onclick="openTriviaMenu()">
+            <div class="setting-text">
+                <h4>Trivia Quiz</h4>
+                <p>Test your knowledge</p>
+            </div>
+            <div style="font-size: 26px;">🧠</div>
+        </button>
+
+        <button class="setting-item" onclick="openMapMenu() "style="display: none;">
+            <div class="setting-text">
+                <h4>Map Explorer</h4>
+                <p>Master your geography</p>
+            </div>
+            <div style="font-size: 26px;">🗺️</div>
+        </button>
     </div>
 </div>
 
@@ -167,6 +184,7 @@
 
     <div id="mistakeAnswerContainer">
         <button id="toggleMistakeAnswer" onclick="toggleMistakeAnswerBtn()">▼ Show Answer ▼</button>
+        <button id="infoBtnMistake" class="info-btn" onclick="openInfoModal(event, 'infoBtnMistake')">i</button>
         <button id="audioBtnMistake" class="audio-btn" onclick="toggleVoiceover(event, 'audioBtnMistake')"></button>
         <div id="mistakeAnswerContent"></div>
     </div>
@@ -185,7 +203,7 @@
     <h2 style="color: var(--primary); margin-top: 20px;">Set Timer</h2>
     
     <div class="rollerBox" style="margin: 30px 0;">
-        <div class="slot review-slot" id="taMinuteScroll" style="width: 80px;">
+        <div class="slot review-slot" id="taMinuteScroll" style="width: 80px;" onclick="openPicker('taMinutes')">
             <div class="reel" id="taMinuteReel"></div>
         </div>
         <div style="display: flex; align-items: center; font-size: 20px; font-weight: 800; color: var(--text-main);">MINUTES</div>
@@ -205,6 +223,7 @@
 
     <div id="taAnswerContainer">
         <button id="toggleTAAnswer" onclick="toggleTAAnswerBtn()">▼ Show Answer ▼</button>
+        <button id="infoBtnTA" class="info-btn" onclick="openInfoModal(event, 'infoBtnTA')">i</button>
         <button id="audioBtnTA" class="audio-btn" onclick="toggleVoiceover(event, 'audioBtnTA')"></button>
         <div id="taAnswerContent"></div>
     </div>
@@ -233,6 +252,69 @@
     </div>
 </div>
 
+<div id="mapMenuContainer" class="view-container">
+    <div style="width: 100%; display: flex; align-items: center; padding: 15px 25px; box-sizing: border-box;">
+        <button onclick="exitMapMenu()" style="background: none; border: none; color: var(--secondary); font-weight: 800; font-size: 16px; cursor: pointer; padding: 0;">← Back</button>
+    </div>
+    
+    <h2 style="color: var(--primary); margin-top: 20px;">Select a Map</h2>
+    <p style="color: var(--text-muted); font-weight: 800; margin-top: -10px; margin-bottom: 30px;">Cycle <span id="mapMenuCycleDisplay">2</span></p>
+    
+    <div id="mapSelectionList" style="display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 400px; margin: 0 auto;"></div>
+</div>
+
+<div id="mapGameContainer" class="view-container">
+    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; box-sizing: border-box;">
+        <button onclick="exitMapGame()" style="background: none; border: none; color: var(--secondary); font-weight: 800; font-size: 16px; cursor: pointer; padding: 0;">← Back</button>
+        
+        <button onclick="nextMapQuestion()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: var(--text-muted); font-weight: 800; font-size: 14px; border-radius: 8px; padding: 6px 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">Skip ⏭️</button>
+        
+        <span id="mapScoreDisplay" style="color: var(--text-muted); font-weight: 800; font-size: 14px; text-transform: uppercase;">Score: 0</span>
+    </div>
+
+<h2 id="mapPrompt" style="color: var(--primary); margin: 0 0 10px 0; padding: 0 10px; height: 60px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2;">Loading Map...</h2>
+
+    <div id="svgMapWrapper" style="touch-action: none; "width: 100%; flex: 1; overflow: hidden; background: #dbeafe; border-top: 2px solid rgba(74, 144, 226, 0.2); box-shadow: inset 0 10px 20px rgba(0,0,0,0.05); display: flex; justify-content: center; align-items: flex-start;"></div>
+
+    <div id="twoFingerReminder" style="position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); display: none; align-items: center; justify-content: center; background: var(--primary); color: white; padding: 12px 24px; border-radius: 30px; font-weight: 800; font-size: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 100; pointer-events: none; transition: opacity 0.3s ease;">
+        <span style="margin-right: 10px; font-size: 24px;"></span> Use two fingers to scroll and zoom
+    </div>
+</div>
+
+<div id="triviaMenuContainer" class="view-container">
+    <div style="width: 100%; display: flex; align-items: center; padding: 15px 25px; box-sizing: border-box;">
+        <button onclick="exitTriviaMenu()" style="background: none; border: none; color: var(--secondary); font-weight: 800; font-size: 16px; cursor: pointer; padding: 0;">← Back</button>
+    </div>
+    
+    <h2 style="color: var(--primary); margin-top: 20px;">How Many Questions?</h2>
+    
+    <div class="rollerBox" style="margin: 30px 0;">
+        <div class="slot review-slot" id="triviaCountScroll" style="width: 160px;" onclick="openPicker('triviaCount')">
+            <div class="reel" id="triviaCountReel"></div>
+        </div>
+    </div>
+    
+    <button onclick="startTriviaGame()" style="background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 20px; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255,111,97,0.3);">START</button>
+</div>
+
+<div id="triviaGameContainer" class="view-container">
+    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; box-sizing: border-box;">
+        <button onclick="exitTriviaGame()" style="background: none; border: none; color: #ef4444; font-weight: 800; font-size: 16px; cursor: pointer; padding: 0;">Quit</button>
+        <span id="triviaScoreDisplay" style="color: var(--text-muted); font-weight: 800; font-size: 14px; text-transform: uppercase;">Score: 0</span>
+    </div>
+
+    <div id="triviaSubjectLabel" style="font-size: 16px; font-weight: 800; color: var(--secondary); margin-bottom: -5px; margin-top: 10px;">Subject - Week</div>
+
+    <div id="triviaPrompt"></div>
+
+    <div class="trivia-grid">
+        <button id="triviaBtn0" class="trivia-option-btn"></button>
+        <button id="triviaBtn1" class="trivia-option-btn"></button>
+        <button id="triviaBtn2" class="trivia-option-btn"></button>
+        <button id="triviaBtn3" class="trivia-option-btn"></button>
+    </div>
+</div>
+
 <div id="taResultsOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); z-index: 5000;">
     <canvas id="taConfettiCanvas" style="position: absolute; inset: 0; pointer-events: none; z-index: 5001;"></canvas>
     
@@ -254,6 +336,25 @@
     </div>
 </div>
 
+<div id="triviaResultsOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); z-index: 5000;">
+    <canvas id="triviaConfettiCanvas" style="position: absolute; inset: 0; pointer-events: none; z-index: 5001;"></canvas>
+    
+    <div class="doneBox" style="position: relative; z-index: 5002;">
+        <div class="doneActions">
+            <h3 style="margin-top:0; color: var(--secondary); font-size: 24px;">Quiz Complete!</h3>
+            
+            <div style="font-size: 48px; margin: 10px 0;">🧠</div>
+            
+            <p style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 5px;">Score: <span id="triviaFinalScore" style="color: var(--secondary);">0 / 0</span></p>
+            <p id="triviaAccuracy" style="font-size: 16px; font-weight: 700; color: var(--text-muted); margin-bottom: 25px; margin-top: -10px;">Accuracy: 0%</p>
+            
+            <div style="display:flex; justify-content:center;">
+                <button onclick="closeTriviaResults()" style="background:#22c55e; color:white; border:none; padding:12px 18px; border-radius:12px; font-weight:700; cursor:pointer; width: 100%; font-size: 16px;">Awesome!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="mistakeResultsOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); z-index: 5000;">
     <canvas id="mistakeConfettiCanvas" style="position: absolute; inset: 0; pointer-events: none; z-index: 5001;"></canvas>
     
@@ -270,8 +371,26 @@
     </div>
 </div>
 
+<div id="mapResultsOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); z-index: 5000;">
+    <canvas id="mapConfettiCanvas" style="position: absolute; inset: 0; pointer-events: none; z-index: 5001;"></canvas>
+    
+    <div class="doneBox" style="position: relative; z-index: 5002;">
+        <div class="doneActions">
+            <h3 style="margin-top:0; color: var(--secondary); font-size: 24px;">Map Cleared!</h3>
+            
+            <div style="font-size: 48px; margin: 10px 0;">🗺️</div>
+            
+            <p style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 5px;">Score: <span id="mapFinalScore" style="color: var(--secondary);">0 / 0</span></p>
+            <p id="mapAccuracy" style="font-size: 16px; font-weight: 700; color: var(--text-muted); margin-bottom: 25px; margin-top: -10px;">Accuracy: 0%</p>
+            
+            <div style="display:flex; justify-content:center;">
+                <button onclick="closeMapResults()" style="background:#22c55e; color:white; border:none; padding:12px 18px; border-radius:12px; font-weight:700; cursor:pointer; width: 100%; font-size: 16px;">Awesome!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="settingsContainer" class="view-container">
-    <div class="version-tag">v<span id="app-version">Loading...</span></div>
     <h1 class="app-title" style="margin-top: 40px; margin-bottom: 20px;">Settings</h1>
     
     <div class="settings-menu">
@@ -314,6 +433,13 @@
             </div>
             <div class="toggle-switch" id="switch-dark"><div class="toggle-knob"></div></div>
         </button>
+
+        <div class="setting-item" style="cursor: default;">
+            <div class="setting-text">
+                <h4>App Version</h4>
+                <p>Current: v<span id="app-version">Loading...</span></p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -373,7 +499,17 @@
     </div>
 </div>
 
+<div id="infoModalOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 6000;">
+    <div style="background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); width: 90%; max-width: 500px; border-radius: 16px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); max-height: 80vh; overflow-y: auto; position: relative; text-align: center;">
+        <button onclick="closeInfoModal()" style="position: absolute; top: 15px; right: 15px; background: #f1f5f9; border: none; border-radius: 50%; width: 30px; height: 30px; font-weight: 800; cursor: pointer; color: #64748b;">X</button>
+        <h3 style="margin-top: 0; color: var(--primary);">Extra Info</h3>
+        <div id="infoModalContent"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js"></script>
 <script src="data.js"></script>
+<script src="map-c2-europe.js"></script>
 <script src="app.js"></script>
 
 </body>

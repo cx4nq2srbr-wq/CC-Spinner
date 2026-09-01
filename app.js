@@ -5,8 +5,7 @@ let currentMode = 'spinner';
 
 function switchMode(mode) {
     stopVoiceover();
-    const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer'];
-
+const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer', 'mapMenuContainer', 'mapGameContainer', 'triviaMenuContainer', 'triviaGameContainer'];
     // THE FIX: Double-tap logic to return to the Focus menu
     if (mode === 'challenge' && currentMode === 'challenge') {
         challengeIds.forEach(id => {
@@ -325,6 +324,7 @@ function spinBoth() {
       ansDiv.innerHTML = lesson.a;
       
       prepVoiceover(subject, week, 'audioBtnMain');
+      prepInfoBtn(subject, week, 'infoBtnMain');
 
       // Handle Auto-Reveal
       if (userSettings.autoReveal) {
@@ -835,6 +835,7 @@ function updateReviewDisplay() {
     document.getElementById('reviewAnswerContent').innerHTML = lesson.a;
 
     prepVoiceover(subject, week, 'audioBtnReview');
+    prepInfoBtn(subject, week, 'infoBtnReview');
     updateFlagUI(); // Ensure flag color updates when scrolling!
 }
 
@@ -858,18 +859,48 @@ function openPicker(type) {
             btn.onclick = () => selectPickerItem(i);
             grid.appendChild(btn);
         });
-    } else {
+    } else if (type === 'week') {
         title.textContent = 'Select Week';
         grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(60px, 1fr))';
         weeks.forEach((w, i) => {
             const btn = document.createElement('button');
-            // THE FIX: Same clean class logic here!
             btn.className = `picker-btn ${i === reviewWeekIdx ? 'selected' : ''}`;
             btn.textContent = w;
             btn.onclick = () => selectPickerItem(i);
             grid.appendChild(btn);
         });
+    } else if (type === 'taMinutes') {
+        title.textContent = 'Select Minutes';
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(60px, 1fr))';
+        
+        // Find out what is currently selected on the wheel
+        const scroll = document.getElementById('taMinuteScroll');
+        const currentIdx = Math.round(scroll.scrollTop / 80);
+
+        for(let i = 1; i <= 60; i++) {
+            const btn = document.createElement('button');
+            btn.className = `picker-btn ${i - 1 === currentIdx ? 'selected' : ''}`;
+            btn.textContent = i;
+            btn.onclick = () => selectPickerItem(i - 1);
+            grid.appendChild(btn);
+        }
+    } else if (type === 'triviaCount') {
+        title.textContent = 'Select Amount';
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(80px, 1fr))';
+        
+        // Find out what is currently selected on the wheel
+        const scroll = document.getElementById('triviaCountScroll');
+        const currentIdx = Math.round(scroll.scrollTop / 80);
+
+        currentTriviaIncrements.forEach((val, i) => {
+            const btn = document.createElement('button');
+            btn.className = `picker-btn ${i === currentIdx ? 'selected' : ''}`;
+            btn.textContent = val;
+            btn.onclick = () => selectPickerItem(i);
+            grid.appendChild(btn);
+        });
     }
+    
     overlay.style.display = 'flex';
 }
 
@@ -880,11 +911,16 @@ function closePicker() {
 function selectPickerItem(idx) {
     if (currentPickerType === 'subject') {
         reviewSubjectIdx = idx;
-    } else {
+        updateReviewDisplay();
+    } else if (currentPickerType === 'week') {
         reviewWeekIdx = idx;
+        updateReviewDisplay();
+    } else if (currentPickerType === 'taMinutes') {
+        document.getElementById('taMinuteScroll').scrollTo({ top: idx * 80, behavior: 'smooth' });
+    } else if (currentPickerType === 'triviaCount') {
+        document.getElementById('triviaCountScroll').scrollTo({ top: idx * 80, behavior: 'smooth' });
     }
-    updateReviewDisplay();
-    // THE FIX: Safely check for vibration support so iOS doesn't crash before closing the menu
+    
     if(userSettings.haptics && navigator.vibrate) navigator.vibrate(20);
     closePicker();
 }
@@ -943,52 +979,132 @@ function startConfetti(canvasId = 'confettiCanvas') {
     confettiResizeHandler = resize;
     window.addEventListener('resize', confettiResizeHandler);
 
-    const w = canvas.width, h = canvas.height;
+    // THE FIX: The Randomizer!
+    const styles = ['confetti', 'fireworks', 'emojis'];
+    const activeStyle = styles[Math.floor(Math.random() * styles.length)];
+    
     const colors = ['#ef4444','#f97316','#f59e0b','#22c55e','#06b6d4','#6366f1','#ec4899'];
+    const emojiList = ['📜', '📖', '🌍', '⚔️', '🏛️', '🔢', '🧪', '⏳'];
     const parts = [];
 
-    for (let i = 0; i < 140; i++) {
-        parts.push({
-            x: Math.random() * w,
-            y: Math.random() * -h,
-            vx: (Math.random() - 0.5) * 4,
-            vy: Math.random() * 3 + 2,
-            r: Math.random() * 8 + 4,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            rot: Math.random() * 360,
-            vr: (Math.random() - 0.5) * 10
-        });
+    // Pre-load particles for Confetti and Emojis
+    if (activeStyle === 'confetti' || activeStyle === 'emojis') {
+        for (let i = 0; i < 100; i++) {
+            parts.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * -canvas.height,
+                vx: (Math.random() - 0.5) * 4,
+                vy: Math.random() * 3 + 2,
+                r: Math.random() * 8 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                emoji: emojiList[Math.floor(Math.random() * emojiList.length)],
+                size: Math.random() * 20 + 20,
+                rot: Math.random() * 360,
+                vr: (Math.random() - 0.5) * 10
+            });
+        }
     }
-    confettiParticles = parts;
 
     function frame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        for (let p of parts) {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.02; // Gravity
-            p.rot += p.vr;
-            
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.rot * Math.PI / 180);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r * 0.6);
-            ctx.restore();
+        if (activeStyle === 'confetti') {
+            for (let p of parts) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.02; // Gravity
+                p.rot += p.vr;
+                
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot * Math.PI / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r * 0.6);
+                ctx.restore();
 
-            if (p.y > canvas.height + 20) {
-                if (!isConfettiStopping) {
-                    p.y = -10;
-                    p.x = Math.random() * canvas.width;
-                    p.vy = Math.random() * 3 + 2;
+                if (p.y > canvas.height + 20) {
+                    if (!isConfettiStopping) {
+                        p.y = -10;
+                        p.x = Math.random() * canvas.width;
+                        p.vy = Math.random() * 3 + 2;
+                    }
                 }
             }
-        }
+            if (isConfettiStopping && parts.every(p => p.y > canvas.height + 20)) { stopConfetti(canvasId); return; }
+        
+        } else if (activeStyle === 'emojis') {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let p of parts) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.02; // Gravity
+                p.rot += p.vr;
 
-        if (isConfettiStopping && parts.every(p => p.y > canvas.height + 20)) {
-            stopConfetti();
-            return; 
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot * Math.PI / 180);
+                ctx.font = `${p.size}px Arial`;
+                ctx.fillText(p.emoji, 0, 0);
+                ctx.restore();
+
+                if (p.y > canvas.height + 40) {
+                    if (!isConfettiStopping) {
+                        p.y = -40;
+                        p.x = Math.random() * canvas.width;
+                        p.vy = Math.random() * 3 + 2;
+                    }
+                }
+            }
+            if (isConfettiStopping && parts.every(p => p.y > canvas.height + 40)) { stopConfetti(canvasId); return; }
+        
+        } else if (activeStyle === 'fireworks') {
+            ctx.globalCompositeOperation = 'lighter';
+            
+            // Randomly spawn new firework bursts
+            if (Math.random() < 0.06 && !isConfettiStopping) {
+                const bx = Math.random() * canvas.width;
+                const by = Math.random() * (canvas.height * 0.5); // Explode in the top half of the screen
+                const fColor = colors[Math.floor(Math.random() * colors.length)];
+                for (let i = 0; i < 40; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 5 + 2;
+                    parts.push({
+                        x: bx, y: by,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        color: fColor,
+                        alpha: 1,
+                        decay: Math.random() * 0.015 + 0.015,
+                        r: Math.random() * 3 + 1
+                    });
+                }
+            }
+
+            for (let i = parts.length - 1; i >= 0; i--) {
+                let p = parts[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05; // Gravity
+                p.vx *= 0.94; // Air friction slows the explosion down
+                p.alpha -= p.decay; // Fade out over time
+
+                if (p.alpha <= 0) {
+                    parts.splice(i, 1);
+                    continue;
+                }
+
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.globalAlpha = 1; 
+            ctx.globalCompositeOperation = 'source-over'; 
+
+            if (isConfettiStopping && parts.length === 0) { stopConfetti(canvasId); return; }
         }
 
         confettiAnimationId = requestAnimationFrame(frame);
@@ -1043,20 +1159,29 @@ bindHoldButton('decreaseWeek', decreaseWeek);
 
 // --- PWA Service Worker ---
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').then(reg => {
-      reg.update(); 
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            alert("New version available! Click OK to update."); 
-            window.location.reload();
-          }
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').then(reg => {
+            
+            // 1. Force the phone to check for updates the millisecond the app loads
+            reg.update();
+
+            // 2. Force the phone to check for updates EVERY time you minimize and reopen the app!
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    reg.update();
+                }
+            });
         });
-      });
     });
-  });
+
+    // 3. Silently reload the app if the new worker just installed in the background
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            window.location.reload();
+            refreshing = true;
+        }
+    });
 }
 
 /* ==========================================================================
@@ -1140,7 +1265,8 @@ function spinNextMistake() {
 
         // 8. Prep Audio
         prepVoiceover(currentMistake.subject, currentMistake.week, 'audioBtnMistake');
-        
+        prepInfoBtn(currentMistake.subject, currentMistake.week, 'infoBtnMistake');
+
     } catch (error) {
         console.error("Mistake Review Crash:", error);
         alert("Oops! A corrupted lesson got stuck in the deck. We've cleared the error, please try again.");
@@ -1315,6 +1441,7 @@ function nextTAQuestion() {
     document.getElementById('toggleTAAnswer').textContent = '▼ Show Answer ▼';
     
     prepVoiceover(taCurrent.subject, taCurrent.week, 'audioBtnTA');
+    prepInfoBtn(taCurrent.subject, taCurrent.week, 'infoBtnTA');
 }
 
 function toggleTAAnswerBtn() {
@@ -1526,4 +1653,695 @@ function stopVoiceover() {
         voiceAudio.pause();
         if (activeVoiceBtn) setAudioIcon(activeVoiceBtn, false);
     }
+}
+
+/* ==========================================================================
+   EXTRA INFO ENGINE
+   ========================================================================== */
+function prepInfoBtn(subject, week, btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    
+    // Reset state
+    btn.style.display = 'none';
+    
+    // Construct the base file name
+    const cleanSubject = subject.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const jpgUrl = `extra/c${currentCycle}-${cleanSubject}-w${week}.jpg`;
+    const pngUrl = `extra/c${currentCycle}-${cleanSubject}-w${week}.png`;
+
+    // Ping the server for the JPG first
+    fetch(jpgUrl, { method: 'HEAD' })
+        .then(res => {
+            if (res.ok) {
+                btn.dataset.url = jpgUrl;
+                btn.style.display = 'flex'; // Found the JPG!
+            } else {
+                // If the JPG is missing, check for a PNG
+                return fetch(pngUrl, { method: 'HEAD' }).then(resPng => {
+                    if (resPng.ok) {
+                        btn.dataset.url = pngUrl;
+                        btn.style.display = 'flex'; // Found the PNG!
+                    }
+                });
+            }
+        })
+        .catch(e => { /* Both files missing or network error, keep button hidden */ });
+}
+
+let infoPanZoom = null; // Tracks the zoom physics engine!
+
+function openInfoModal(e, btnId) {
+    if (e) e.stopPropagation(); 
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    
+    const btn = document.getElementById(btnId);
+    if (!btn || !btn.dataset.url) return;
+    
+    const contentDiv = document.getElementById('infoModalContent');
+    contentDiv.innerHTML = ""; // Clear old content
+    
+    // Create the image element safely
+    const img = document.createElement('img');
+    img.id = 'infoImage';
+    img.src = btn.dataset.url;
+    img.style.width = '100%';
+    img.style.borderRadius = '8px';
+    img.style.touchAction = 'none'; // Critical to stop the browser from fighting the zoom!
+    
+    contentDiv.appendChild(img);
+    document.getElementById('infoModalOverlay').style.display = 'flex';
+
+    // Wait for the image to load, then attach the physics engine!
+    img.onload = () => {
+        if (infoPanZoom) infoPanZoom.dispose(); // Clean up just in case
+        infoPanZoom = panzoom(img, {
+            maxZoom: 5,
+            minZoom: 1,
+            bounds: true,
+            boundsPadding: 0.1
+        });
+    };
+}
+
+function closeInfoModal() {
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    
+    // Safely destroy the physics engine so it doesn't glitch future popups
+    if (infoPanZoom) {
+        infoPanZoom.dispose();
+        infoPanZoom = null;
+    }
+    
+    document.getElementById('infoModalOverlay').style.display = 'none';
+    document.getElementById('infoModalContent').innerHTML = ""; 
+}
+
+/* ==========================================================================
+   14. MAP GAME LOGIC
+   ========================================================================== */
+// Our upgraded Map Database with "Coming Soon" flags!
+const mapDatabase = {
+    1: [
+        { id: 'c1_africa', name: 'Africa', svg: null, comingSoon: true },
+        { id: 'c1_world', name: 'World', svg: null, comingSoon: true }
+    ],
+    2: [
+        { id: 'c2_europe', name: 'Europe', svg: europeMap, comingSoon: false },
+        { id: 'c2_world', name: 'World', svg: null, comingSoon: true }
+    ],
+    3: [
+        { id: 'c3_us', name: 'United States', svg: null, comingSoon: true },
+        { id: 'c3_canada', name: 'Canada', svg: null, comingSoon: true }
+    ]
+};
+
+// --- NEW: Universal Name Cleaner ---
+function formatMapTargetName(rawId) {
+    // 1. Convert to a string and trim any accidental spaces
+    let name = String(rawId).trim();
+    
+    // 2. Aggressively search and destroy the "w3_", "W3 ", or "w03-" at the start
+    name = name.replace(/^w\d+[_\-\s]*/i, '');
+    
+    // 3. Format whatever is left into clean, capitalized words!
+    return name.split(/[_\-\s]+/)
+        .filter(word => word.length > 0) 
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
+function openMapMenu() {
+    document.getElementById('challengeContainer').classList.remove('active');
+    document.getElementById('mapMenuContainer').classList.add('active');
+    activeChallengePage = 'mapMenuContainer';
+    
+    document.getElementById('mapMenuCycleDisplay').textContent = currentCycle;
+    
+    const list = document.getElementById('mapSelectionList');
+    list.innerHTML = ''; // Clear old buttons
+    
+    const availableMaps = mapDatabase[currentCycle] || [];
+    
+    if (availableMaps.length === 0) {
+        list.innerHTML = `<p style="color: var(--text-muted); font-weight: bold;">Maps for Cycle ${currentCycle} coming soon!</p>`;
+        return;
+    }
+    
+    // Generate a button for every map in the current cycle
+    availableMaps.forEach(mapObj => {
+        const btn = document.createElement('button');
+        btn.className = 'setting-item'; 
+        
+        if (mapObj.comingSoon) {
+            // NEW: Greyed out "Coming Soon" styling
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'default';
+            btn.style.pointerEvents = 'none'; // Completely blocks clicks
+            
+            btn.innerHTML = `
+                <div class="setting-text" style="text-align: left;">
+                    <h4>${mapObj.name}</h4>
+                    <p style="color: var(--primary); font-weight: 800;">Coming Soon</p>
+                </div>
+                <div style="font-size: 22px; opacity: 0.5;">🔒</div>
+            `;
+        } else {
+            // Normal active styling
+            btn.onclick = () => startMapGame(mapObj.svg);
+            btn.innerHTML = `
+                <div class="setting-text" style="text-align: left;">
+                    <h4>${mapObj.name}</h4>
+                    <p>Tap to practice</p>
+                </div>
+                <div style="font-size: 24px; color: var(--primary);">➔</div>
+            `;
+        }
+        
+        list.appendChild(btn);
+    });
+}
+
+function exitMapMenu() {
+    document.getElementById('mapMenuContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer';
+}
+
+let mapTargets = [];
+let availableMapTargets = [];
+let currentMapTarget = null;
+let mapScoreRight = 0;
+let mapAttempts = 0;
+let mapPanZoom = null;
+let isMapDragging = false;
+let isMapProcessing = false;
+let mapPromptTimeout = null;
+let mapDragTimeout = null;
+let touchStartX = 0;
+let touchStartY = 0;
+let isMapTouchTracked = false;
+let lastMapClickTime = 0;
+
+function startMapGame(selectedMapSvg) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // Hide the Menu, show the Game
+    document.getElementById('mapMenuContainer').classList.remove('active');
+    document.getElementById('mapGameContainer').classList.add('active');
+    activeChallengePage = 'mapGameContainer';
+    
+    mapScoreRight = 0;
+    mapAttempts = 0;
+    isMapProcessing = false;
+    clearTimeout(mapPromptTimeout);
+    document.getElementById('mapScoreDisplay').textContent = `Score: 0 / 0`;
+
+    const reminder = document.getElementById('twoFingerReminder');
+    if (reminder) {
+        reminder.innerHTML = `<span style="margin-right: 10px; font-size: 24px;">🗺️</span> Drag to pan, pinch to zoom`;
+        reminder.style.display = 'flex';
+        reminder.style.opacity = '1';
+    }
+
+    // THE FIX 1: Safely shut down the old engine BEFORE destroying its HTML!
+    if (typeof mapPanZoom !== 'undefined' && mapPanZoom) {
+        mapPanZoom.dispose();
+        mapPanZoom = null;
+    }
+
+    const wrapper = document.getElementById('svgMapWrapper');
+    wrapper.innerHTML = selectedMapSvg; // Now it's safe to swap the map
+
+    wrapper.addEventListener('touchstart', hideMapReminder, { once: true });
+    wrapper.addEventListener('mousedown', hideMapReminder, { once: true });
+
+    if (!isMapTouchTracked) {
+        wrapper.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) { 
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+        isMapTouchTracked = true;
+    }
+
+    const svg = document.querySelector('#svgMapWrapper svg');
+    if (svg) {
+        let initialZoom = 1;
+        const viewBox = svg.getAttribute('viewBox');
+
+        if (viewBox) {
+            // Safer regex to catch any weird formatting Figma might export
+            const vbParts = viewBox.match(/[\d\.]+/g);
+            if (vbParts && vbParts.length >= 4) {
+                const vbWidth = parseFloat(vbParts[2]);
+                const vbHeight = parseFloat(vbParts[3]);
+
+                // THE FIX: Strip Figma's hardcoded sizes
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+
+                // Force the SVG DOM element to perfectly match the screen's exact pixel width
+                const targetWidth = wrapper.clientWidth;
+                const targetHeight = targetWidth * (vbHeight / vbWidth);
+
+                svg.style.width = targetWidth + 'px';
+                svg.style.height = targetHeight + 'px';
+
+                // If the map is shorter than the screen, calculate the exact zoom needed to stretch it to the top/bottom!
+                if (targetHeight < wrapper.clientHeight) {
+                    initialZoom = wrapper.clientHeight / targetHeight;
+                }
+            }
+        }
+
+        // Build the engine with the proper physics padding!
+        mapPanZoom = panzoom(svg, {
+            maxZoom: 6,
+            minZoom: initialZoom,
+            bounds: true,
+            boundsPadding: 0.05 
+        });
+        
+        // Instantly snap to our perfect zoom
+        mapPanZoom.zoomAbs(wrapper.clientWidth / 2, wrapper.clientHeight / 2, initialZoom);
+        mapPanZoom.moveTo(0, 0); 
+    }
+
+    initMapHitboxes();
+    availableMapTargets = [...mapTargets];
+    nextMapQuestion();
+}
+
+// NEW: Helper function to gracefully fade out the reminder pill
+function hideMapReminder() {
+    const reminder = document.getElementById('twoFingerReminder');
+    if (reminder) {
+        reminder.style.opacity = '0';
+        setTimeout(() => reminder.style.display = 'none', 300);
+    }
+}
+
+function exitMapGame() {
+    clearTimeout(mapPromptTimeout); // Stop timers if they leave early
+    isMapProcessing = false;
+    document.getElementById('mapGameContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer';
+}
+
+function initMapHitboxes() {
+    mapTargets = [];
+    const svg = document.querySelector('#svgMapWrapper svg');
+    if (!svg) return;
+
+    // Grab the current Max Week from the global Lesson Grid display
+    const maxWeekDisplay = document.getElementById('maxWeekDisplay');
+    const currentMaxWeek = maxWeekDisplay ? parseInt(maxWeekDisplay.textContent) : 24;
+
+    // Find every element in the SVG that has an ID
+    const interactables = svg.querySelectorAll('[id]');
+
+    interactables.forEach(el => {
+        const rawId = el.getAttribute('id');
+        
+        if (!rawId || rawId.startsWith('Vector') || rawId.startsWith('Group') || rawId.startsWith('mask')) return;
+
+        const weekMatch = rawId.match(/^w(\d+)[_\-\s]+(.+)/i);
+        if (!weekMatch) return;
+
+        // THE FIX: Instantly hide ALL correctly labeled game pieces, regardless of what week they are!
+        el.style.opacity = '0';
+
+        const weekNum = parseInt(weekMatch[1]);
+        const rawName = weekMatch[2];
+
+        // If the week is higher than our max week, disable clicks and abort!
+        if (weekNum > currentMaxWeek) {
+            el.style.pointerEvents = 'none'; // Ensures it doesn't block clicks to the base map
+            return;
+        }
+
+        // If it survived the Max Week check, add it to the game!
+        mapTargets.push(rawId);
+        
+        el.classList.add('map-target');
+        
+        // Add the distance-checking tap listener
+        const handleTap = (e) => {
+            if (e.type === 'touchend' && e.changedTouches.length > 0) {
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                if (Math.hypot(endX - touchStartX, endY - touchStartY) > 10) return; 
+            }
+
+            if (isMapDragging) return; 
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault(); 
+            
+            handleMapClick(rawId, el);
+        };
+
+        el.addEventListener('mousedown', handleTap);
+        el.addEventListener('touchend', handleTap, { passive: false });
+    });
+}
+
+function nextMapQuestion() {
+    if (availableMapTargets.length === 0) {
+        finishMapGame(); 
+        return;
+    }
+    
+    const randIdx = Math.floor(Math.random() * availableMapTargets.length);
+    currentMapTarget = availableMapTargets[randIdx];
+    availableMapTargets.splice(randIdx, 1);
+    
+    // --- THE GHOST TRICK LOGIC ---
+    const overlays = ['peninsula', 'mountains', 'river', 'alps'];
+    let activeOverlay = overlays.find(o => currentMapTarget.includes(o)) || 'base';
+
+    mapTargets.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isShapeOverlay = overlays.find(o => id.includes(o));
+
+        if (isShapeOverlay && isShapeOverlay !== activeOverlay) {
+            el.style.pointerEvents = 'none';
+        } else {
+            el.style.pointerEvents = 'all';
+        }
+    });
+   
+    const cleanName = formatMapTargetName(currentMapTarget);
+    document.getElementById('mapPrompt').textContent = `Find: ${cleanName}`;
+}
+
+function handleMapClick(clickedId, element) {
+    // Speed limit to prevent accidental double-taps
+    const now = Date.now();
+    if (now - lastMapClickTime < 500) return; 
+    lastMapClickTime = now;
+
+    if (isMapProcessing) return; 
+
+    // THE FIX: We only increment this exactly ONCE per tap!
+    mapAttempts++;
+    
+    if (clickedId === currentMapTarget) {
+        // CORRECT!
+        isMapProcessing = true; 
+        clearTimeout(mapPromptTimeout); 
+
+        if (userSettings.haptics && navigator.vibrate) navigator.vibrate([30, 50, 30]);
+        
+        playSound(988, 'triangle', 0.1, 0.03);
+        setTimeout(() => playSound(1319, 'triangle', 0.2, 0.03), 100);
+        
+        mapScoreRight++;
+        document.getElementById('mapScoreDisplay').textContent = `Score: ${mapScoreRight} / ${mapAttempts}`;
+        
+        document.getElementById('mapPrompt').textContent = "Correct!";
+
+        element.style.transition = 'none'; 
+        element.style.opacity = '0.8';     
+        element.classList.add('flash-correct'); 
+        
+        setTimeout(() => {
+            element.style.transition = 'opacity 1s ease-out'; 
+            element.style.opacity = '0'; 
+            setTimeout(() => element.classList.remove('flash-correct'), 1000);
+        }, 50);
+
+        mapPromptTimeout = setTimeout(() => {
+            isMapProcessing = false; 
+            nextMapQuestion();
+        }, 1000);
+
+    } else {
+        // WRONG!
+        clearTimeout(mapPromptTimeout); 
+
+        if (userSettings.haptics && navigator.vibrate) navigator.vibrate(50);
+        playSound(200, 'triangle', 0.1, 0.05); 
+        
+        // THE FIX: The duplicate mapAttempts++ was deleted from right here!
+        document.getElementById('mapScoreDisplay').textContent = `Score: ${mapScoreRight} / ${mapAttempts}`;
+        
+        const cleanClickedName = formatMapTargetName(clickedId);
+        document.getElementById('mapPrompt').textContent = `Oops! That's ${cleanClickedName}. Try again!`;
+        
+        mapPromptTimeout = setTimeout(() => {
+            const rightName = formatMapTargetName(currentMapTarget);
+            document.getElementById('mapPrompt').textContent = `Find: ${rightName}`;
+        }, 2000);
+    }
+}
+
+function finishMapGame() {
+    // 1. Play sounds and haptics
+    playVictoryChime();
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);
+    
+    // 2. Calculate the math
+    const accuracy = mapAttempts > 0 ? Math.round((mapScoreRight / mapAttempts) * 100) : 0;
+    
+    // 3. Inject the math into the HTML
+    document.getElementById('mapFinalScore').textContent = `${mapScoreRight} / ${mapAttempts}`;
+    document.getElementById('mapAccuracy').textContent = `Accuracy: ${accuracy}%`;
+    
+    // 4. Show the overlay and pop the confetti!
+    document.getElementById('mapResultsOverlay').style.display = 'flex';
+    startConfetti('mapConfettiCanvas');
+}
+
+function closeMapResults() {
+    stopConfetti('mapConfettiCanvas');
+    document.getElementById('mapResultsOverlay').style.display = 'none';
+    
+    // Clean up the map game and go back to the menu!
+    exitMapGame(); 
+}
+
+/* ==========================================================================
+   15. TRIVIA GAME LOGIC
+   ========================================================================== */
+let fullTriviaDeck = [];
+let triviaQueue = [];
+let currentTrivia = null;
+let triviaScoreRight = 0;
+let triviaScoreWrong = 0;
+let isTriviaProcessing = false;
+let currentTriviaIncrements = []; // <--- NEW: Saves the list for the popup picker
+
+function openTriviaMenu() {
+    document.getElementById('challengeContainer').classList.remove('active');
+    document.getElementById('triviaMenuContainer').classList.add('active');
+    activeChallengePage = 'triviaMenuContainer';
+
+    // 1. Calculate all available questions
+    fullTriviaDeck = [];
+    const maxLimit = getMaxWeek();
+
+    if (typeof customTriviaBank !== 'undefined') {
+        customTriviaBank.forEach(trivia => {
+            if (trivia.cycle === currentCycle) {
+                const s = trivia.subject;
+                const w = trivia.week;
+                if (!blockedSubjects.includes(s) &&
+                    (w <= maxLimit || allowedWeeks.includes(w)) &&
+                    !blockedWeeks.includes(w) &&
+                    gridState[s] && gridState[s][w]) {
+                    fullTriviaDeck.push(trivia);
+                }
+            }
+        });
+    }
+
+    // 2. Populate the Reel
+    const reel = document.getElementById('triviaCountReel');
+    reel.innerHTML = "";
+
+    if (fullTriviaDeck.length === 0) {
+        const div = document.createElement("div");
+        div.textContent = "0 Available";
+        reel.appendChild(div);
+        return;
+    }
+
+    const maxQ = fullTriviaDeck.length;
+    currentTriviaIncrements = []; // <--- NEW: Reset the global list
+    
+    // Create increments of 5 up to the max
+    for (let i = 5; i < maxQ; i += 5) {
+        currentTriviaIncrements.push(i);
+    }
+    currentTriviaIncrements.push(`All (${maxQ})`);
+
+    currentTriviaIncrements.forEach((val) => {
+        const div = document.createElement("div");
+        div.textContent = val;
+        div.dataset.val = (typeof val === 'number') ? val : maxQ;
+        reel.appendChild(div);
+    });
+
+    setTimeout(() => { document.getElementById('triviaCountScroll').scrollTo({ top: 0, behavior: 'auto' }); }, 50); 
+}
+
+function exitTriviaMenu() {
+    document.getElementById('triviaMenuContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer';
+}
+
+function startTriviaGame() {
+    if (fullTriviaDeck.length === 0) {
+        alert("No trivia questions available! Either the grid is finished, or we need to add more questions.");
+        exitTriviaMenu();
+        return;
+    }
+
+    // 1. Read the wheel to see how many questions they selected
+    const scroll = document.getElementById('triviaCountScroll');
+    const selectedIndex = Math.round(scroll.scrollTop / 80);
+    const reelDivs = document.getElementById('triviaCountReel').children;
+    
+    let amount = fullTriviaDeck.length;
+    if (reelDivs[selectedIndex]) {
+        amount = parseInt(reelDivs[selectedIndex].dataset.val);
+    }
+
+    document.getElementById('triviaMenuContainer').classList.remove('active');
+    document.getElementById('triviaGameContainer').classList.add('active');
+    activeChallengePage = 'triviaGameContainer';
+
+    triviaScoreRight = 0;
+    triviaScoreWrong = 0;
+    document.getElementById('triviaScoreDisplay').textContent = `Score: 0`;
+
+    // 2. Shuffle the master deck, then slice off exactly the amount they requested!
+    fullTriviaDeck.sort(() => Math.random() - 0.5);
+    triviaQueue = fullTriviaDeck.slice(0, amount);
+
+    nextTriviaQuestion();
+}
+
+function exitTriviaGame() {
+    stopVoiceover();
+    document.getElementById('triviaGameContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer';
+}
+
+function nextTriviaQuestion() {
+    isTriviaProcessing = false;
+    stopVoiceover();
+
+    if (triviaQueue.length === 0) {
+        finishTriviaGame();
+        return;
+    }
+
+    // Pull the next custom question from the deck
+    currentTrivia = triviaQueue.shift();
+
+    document.getElementById('triviaSubjectLabel').textContent = `${subjectIcons[currentTrivia.subject]} ${currentTrivia.subject}`;
+    document.getElementById('triviaPrompt').textContent = currentTrivia.q;
+
+    // Map the custom options to our button logic
+    let allOptions = [
+        { text: currentTrivia.options[0], isCorrect: currentTrivia.answerIndex === 0 },
+        { text: currentTrivia.options[1], isCorrect: currentTrivia.answerIndex === 1 },
+        { text: currentTrivia.options[2], isCorrect: currentTrivia.answerIndex === 2 },
+        { text: currentTrivia.options[3], isCorrect: currentTrivia.answerIndex === 3 }
+    ];
+
+    // Shuffle the options so the correct answer isn't always in the same spot!
+    allOptions.sort(() => Math.random() - 0.5);
+
+    // Populate the buttons
+    for (let i = 0; i < 4; i++) {
+        const btn = document.getElementById(`triviaBtn${i}`);
+        btn.innerHTML = allOptions[i].text;
+        btn.className = 'trivia-option-btn'; // Reset colors from previous question
+        
+        // NEW: Tag the button so we can easily find it later!
+        btn.dataset.correct = allOptions[i].isCorrect; 
+        
+        btn.onclick = () => processTriviaAnswer(i, allOptions[i].isCorrect, btn);
+    }
+}
+
+function processTriviaAnswer(index, isCorrect, btnElement) {
+    if (isTriviaProcessing) return; // Prevent double taps!
+    isTriviaProcessing = true;
+    
+    let delayTime = 1000; // Default: move fast (1 second) if they get it right!
+
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(15);
+
+    if (isCorrect) {
+        btnElement.classList.add('correct');
+        playSound(988, 'triangle', 0.1, 0.03);
+        setTimeout(() => playSound(1319, 'triangle', 0.2, 0.03), 100);
+        triviaScoreRight++;
+        
+        // Remove from the master grid!
+        if (gridState[currentTrivia.subject]) {
+            gridState[currentTrivia.subject][currentTrivia.week] = false;
+        }
+        saveToDevice();
+        buildGrid();
+
+    } else {
+        btnElement.classList.add('wrong');
+        playSound(200, 'triangle', 0.1, 0.05);
+        triviaScoreWrong++;
+        
+        // Log it as a mistake for the Review Mistake mode!
+        const idx = mistakesBank.findIndex(m => m.subject === currentTrivia.subject && m.week === currentTrivia.week);
+        if (idx === -1) {
+            mistakesBank.push({ subject: currentTrivia.subject, week: currentTrivia.week });
+            saveToDevice();
+            updateFlagUI();
+        }
+        
+        // Highlight the correct answer with a thick green border
+        for (let i = 0; i < 4; i++) {
+            const checkBtn = document.getElementById(`triviaBtn${i}`);
+            if (checkBtn.dataset.correct === 'true') { // THE FIX: Look for our hidden data tag!
+                checkBtn.classList.add('correct-reveal');
+            }
+        }
+
+        delayTime = 3000; // They missed it! Wait 3 full seconds so they can read the answer.
+    }
+    
+    document.getElementById('triviaScoreDisplay').textContent = `Score: ${triviaScoreRight}`;
+
+    // Wait the calculated amount of time before loading the next question
+    setTimeout(() => {
+        nextTriviaQuestion();
+    }, delayTime);
+}
+
+function finishTriviaGame() {
+    playVictoryChime();
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate([60,30,60]);
+    
+    const total = triviaScoreRight + triviaScoreWrong;
+    const accuracy = total > 0 ? Math.round((triviaScoreRight / total) * 100) : 0;
+    
+    document.getElementById('triviaFinalScore').textContent = `${triviaScoreRight} / ${total}`;
+    document.getElementById('triviaAccuracy').textContent = `Accuracy: ${accuracy}%`;
+    
+    document.getElementById('triviaResultsOverlay').style.display = 'flex';
+    startConfetti('triviaConfettiCanvas');
+}
+
+function closeTriviaResults() {
+    stopConfetti('triviaConfettiCanvas');
+    document.getElementById('triviaResultsOverlay').style.display = 'none';
+    exitTriviaGame();
 }

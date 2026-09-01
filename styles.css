@@ -32,7 +32,6 @@ body {
   height: 100vh; 
   padding: env(safe-area-inset-top, 20px) 15px calc(65px + env(safe-area-inset-bottom, 0px)) 15px;
   overflow: hidden; 
-  touch-action: pan-y;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
   
@@ -562,7 +561,8 @@ button:disabled svg text {
   z-index: 4000;
 }
 
-#doneOverlay .doneBox, #taResultsOverlay .doneBox, #mistakeResultsOverlay .doneBox {
+/* Make ALL doneBox popups solid white with a shadow */
+.doneBox {
   position: relative;
   background: #fff;
   padding: 18px;
@@ -575,7 +575,8 @@ button:disabled svg text {
   z-index: 2;
 }
 
-#doneOverlay canvas, #taResultsOverlay canvas, #mistakeResultsOverlay canvas {
+/* Make sure confetti canvases span the entire screen behind the popup */
+canvas[id$="ConfettiCanvas"], #confettiCanvas {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   width: 100%; height: 100%;
@@ -583,19 +584,9 @@ button:disabled svg text {
   z-index: 1;
 }
 
-#doneOverlay .doneActions, #taResultsOverlay .doneActions, #mistakeResultsOverlay .doneActions { 
+.doneActions { 
     position: relative; 
     z-index: 2; 
-}
-
-#resetConfirmOverlay .confirmBox {
-  background: #fff;
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  width: 85%;
-  max-width: 320px;
-  text-align: center;
 }
 
 .picker-btn {
@@ -619,15 +610,6 @@ button:disabled svg text {
 /* ========================================================================== 
    8. VIEW MANAGEMENT
    ========================================================================== */
-.version-tag {
-    position: absolute; 
-    top: env(safe-area-inset-top, 10px);
-    right: 15px; 
-    font-size: 11px; 
-    color: #cbd5e1;  
-    opacity: 0.8;    
-}
-
 .view-container {
     display: none; 
     flex-direction: column;
@@ -988,3 +970,172 @@ body.dark-mode #taTimerDisplay { color: #f8fafc !important; }
 .review-slot::-webkit-scrollbar { display: none; }
 .review-slot .reel { transition: none !important; transform: none !important; }
 .review-slot .reel div { height: 80px; scroll-snap-align: start; }
+
+/* ==========================================================================
+   14. MAP GAME STYLES
+   ========================================================================== */
+#svgMapWrapper {
+    width: 100%;
+    flex: 1;
+    overflow: hidden;
+    background: #dbeafe;
+    border-top: 2px solid rgba(74, 144, 226, 0.2);
+    box-shadow: inset 0 10px 20px rgba(0,0,0,0.05);
+    touch-action: none; /* Tells the browser: "Let the JS handle the touch math" */
+}
+
+#svgMapWrapper svg {
+    width: 100%;
+    height: 100%;
+    user-select: none; 
+    -webkit-user-select: none;
+}
+
+/* 1. The class applied to the map shape when tapped */
+.flash-correct {
+    /* Trigger the clean animation */
+    animation: correctFlash 1s ease-out forwards !important;
+}
+
+/* 2. Force the shape AND any inner lines grouped inside it to be green! */
+.flash-correct, .flash-correct * {
+    fill: #22c55e !important;
+    stroke: #22c55e !important;
+}
+
+/* 3. The clean animation (NO !important tags here, Safari hates them!) */
+@keyframes correctFlash {
+    0% { opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0; }
+}
+
+/* ==========================================================================
+   15. TRIVIA GAME STYLES
+   ========================================================================== */
+.trivia-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 95%;
+    max-width: 600px;
+    margin: 15px auto 30px auto;
+}
+
+.trivia-option-btn {
+    background: var(--card-bg);
+    border: 2px solid rgba(74, 144, 226, 0.2);
+    border-radius: 16px;
+    padding: 15px;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow);
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.trivia-option-btn:active {
+    transform: scale(0.96);
+}
+
+/* Color states for answers */
+.trivia-option-btn.correct { background: #22c55e !important; border-color: #22c55e !important; color: white !important; }
+.trivia-option-btn.wrong { background: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
+.trivia-option-btn.correct-reveal { border-color: #22c55e !important; box-shadow: inset 0 0 0 2px #22c55e, 0 0 0 2px #22c55e !important; background-color: rgba(34, 197, 94, 0.1) !important; }
+/* Dark Mode Overrides */
+body.dark-mode .trivia-option-btn { background: rgba(30, 41, 59, 0.9); border-color: rgba(255, 255, 255, 0.1); color: #f8fafc; }
+body.dark-mode #triviaPrompt { background: rgba(30, 41, 59, 0.9); border-color: rgba(255, 255, 255, 0.1); }
+
+/* ==========================================================================
+   FOCUS MODE SHARED STYLES
+   ========================================================================== */
+.focus-top-bar {
+    width: 100%; display: flex; justify-content: space-between; align-items: center; 
+    padding: 15px 25px; box-sizing: border-box;
+}
+
+.focus-nav-btn {
+    background: none; border: none; font-weight: 800; font-size: 16px; cursor: pointer; padding: 0;
+}
+.focus-nav-btn.back { color: var(--secondary); }
+.focus-nav-btn.quit { color: #ef4444; }
+
+.focus-status-text {
+    color: var(--text-muted); font-weight: 800; font-size: 14px; text-transform: uppercase;
+}
+
+.focus-subject-label {
+    font-size: 16px; font-weight: 800; color: var(--secondary); margin-bottom: -5px; margin-top: 10px; text-align: center;
+}
+
+.focus-start-btn {
+    background: var(--primary); color: white; border: none; padding: 15px 40px; 
+    border-radius: 20px; font-size: 18px; font-weight: 800; cursor: pointer; 
+    box-shadow: 0 4px 15px rgba(255,111,97,0.3);
+}
+
+/* Shared Action Buttons (Standardized to 70px tall, 20px radius) */
+.focus-action-btn {
+    height: 70px; border-radius: 20px; border: none; color: white; 
+    font-weight: 800; font-size: 16px; cursor: pointer; 
+    display: flex; align-items: center; justify-content: center; 
+    transition: transform 0.1s ease, opacity 0.2s;
+}
+.focus-action-btn.red { background: #ef4444; box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
+.focus-action-btn.green { background: #22c55e; box-shadow: 0 4px 15px rgba(34,197,94,0.3); }
+
+/* Specific Button Layouts */
+.focus-mistake-actions {
+    display: flex; gap: 15px; margin-top: auto; margin-bottom: 20px; 
+    width: 90%; max-width: 400px; justify-content: center; margin-inline: auto;
+}
+.focus-mistake-actions .focus-action-btn { flex: 1; }
+
+.focus-ta-actions {
+    display: flex; align-items: center; justify-content: space-between; 
+    width: 95%; max-width: 450px; margin: auto auto 20px auto; padding: 0 10px; box-sizing: border-box;
+}
+.focus-ta-actions .focus-action-btn { width: 70px; }
+
+/* ==========================================================================
+   EXTRA INFO BUTTON & MODAL
+   ========================================================================== */
+.info-btn {
+    position: absolute;
+    top: 27px;
+    left: 10px; /* Sits exactly opposite of the right-aligned audio button */
+    transform: translateY(-50%);
+    height: 42px;
+    width: 42px;
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    color: white;
+    display: none; /* Hidden until the app verifies the file exists */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 24px;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.info-btn:hover { background: rgba(255, 255, 255, 0.4); }
+.info-btn:active { transform: translateY(-50%) scale(0.85); }
+
+#infoModalContent {
+    overflow: hidden;
+    border-radius: 8px;
+    margin-top: 15px;
+    touch-action: none;
+}
