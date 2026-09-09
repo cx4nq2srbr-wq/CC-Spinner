@@ -169,6 +169,14 @@
             </div>
             <div style="font-size: 26px;">🗺️</div>
         </button>
+
+        <button class="setting-item" onclick="openScriptureMenu()">
+            <div class="setting-text">
+                <h4 id="scriptureBtnTitle">Scripture Song</h4>
+                <p id="scriptureBtnDesc">Sing along and learn the verses</p>
+            </div>
+            <div style="font-size: 26px;">🎵</div>
+        </button>
     </div>
 </div>
 
@@ -434,6 +442,14 @@
             <div class="toggle-switch" id="switch-dark"><div class="toggle-knob"></div></div>
         </button>
 
+        <button class="setting-item" onclick="openContactModal()">
+            <div class="setting-text">
+                <h4>Contact Us</h4>
+                <p>Send feedback, suggestions, or bug reports</p>
+            </div>
+            <div style="font-size: 24px;">✉️</div>
+        </button>
+
         <div class="setting-item" style="cursor: default;">
             <div class="setting-text">
                 <h4>App Version</h4>
@@ -466,6 +482,68 @@
         <span>Settings</span>
     </button>
 </nav>
+
+<div id="scriptureContainer" class="view-container">
+    <div class="focus-top-bar" style="padding-bottom: 5px;">
+        <button class="focus-nav-btn back" onclick="exitScriptureMenu()">← Back</button>
+        
+        <!-- The Target Week Dropdown -->
+        <select id="scriptureWeekSelect" onchange="handleScriptureWeekChange()" style="appearance: none; background: var(--secondary); color: white; border: none; padding: 6px 15px; border-radius: 12px; font-weight: 800; font-size: 14px; text-align: center;">
+            <option value="1">Stop after Week 1</option>
+            <option value="2">Stop after Week 2</option>
+            <option value="3">Stop after Week 3</option>
+            <option value="4">Stop after Week 4</option>
+            <option value="5">Stop after Week 5</option>
+            <option value="6">Stop after Week 6</option>
+            <option value="7">Stop after Week 7</option>
+            <option value="8">Stop after Week 8</option>
+            <option value="9">Stop after Week 9</option>
+            <option value="10">Stop after Week 10</option>
+            <option value="11">Stop after Week 11</option>
+            <option value="12">Stop after Week 12</option>
+            <option value="13">Stop after Week 13</option>
+            <option value="14">Stop after Week 14</option>
+            <option value="15">Stop after Week 15</option>
+            <option value="16">Stop after Week 16</option>
+            <option value="17">Stop after Week 17</option>
+            <option value="18">Stop after Week 18</option>
+            <option value="19">Stop after Week 19</option>
+            <option value="20">Stop after Week 20</option>
+            <option value="21">Stop after Week 21</option>
+            <option value="22">Stop after Week 22</option>
+            <option value="23">Stop after Week 23</option>
+            <option value="24" selected>Play Full Song</option>
+        </select>
+    </div>
+
+    <!-- The Scrolling Lyrics Area -->
+    <div id="scriptureLyricsContainer"></div>
+
+    <!-- The Floating Play Button & Progress Ring -->
+    <div style="width: 100%; padding: 10px; box-sizing: border-box; z-index: 10; display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+        
+        <!-- Restart Button -->
+        <button onclick="restartScriptureAudio()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 10px; margin-right: 15px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px;">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <polyline points="3 3 3 8 8 8"></polyline>
+            </svg>
+        </button>
+
+        <div class="scripture-player-wrap" onclick="toggleScriptureAudio()">
+            <svg class="scripture-progress-svg" viewBox="0 0 70 70">
+                <circle class="scripture-progress-bg" cx="35" cy="35" r="31"></circle>
+                <circle id="scriptureProgressBar" class="scripture-progress-bar" cx="35" cy="35" r="31" style="stroke-dasharray: 195; stroke-dashoffset: 195;"></circle>
+            </svg>
+            <div id="scripturePlayBtn" class="audio-btn scripture-play-btn">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </div>
+        </div>
+
+        <!-- Invisible spacer to keep the play button dead center! -->
+        <div style="width: 46px; margin-left: 15px;"></div>
+    </div>
+</div>
 
 <div id="resetConfirmOverlay">
   <div class="confirmBox">
@@ -507,9 +585,31 @@
     </div>
 </div>
 
+<div id="contactModalOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 6000;">
+    <div style="background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); width: 90%; max-width: 400px; border-radius: 16px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); position: relative; text-align: left;">
+        <button onclick="closeContactModal()" style="position: absolute; top: 15px; right: 15px; background: #f1f5f9; border: none; border-radius: 50%; width: 30px; height: 30px; font-weight: 800; cursor: pointer; color: #64748b;">X</button>
+        <h3 style="margin-top: 0; color: var(--primary);">Contact Us</h3>
+        
+        <label style="font-weight: 800; color: var(--secondary); font-size: 14px;">Reason</label>
+        <select id="contactReason" style="width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 15px; border-radius: 12px; border: 2px solid rgba(74, 144, 226, 0.2); font-family: inherit; font-size: 16px; background: white; color: var(--text-main);">
+            <option value="Feedback / Comment">Feedback / Comment</option>
+            <option value="Feature Suggestion">Feature Suggestion</option>
+            <option value="Incorrect Information">Incorrect Information</option>
+            <option value="Bug / Glitch">Report a Bug / Glitch</option>
+            <option value="Question / Other">Question / Other</option>
+        </select>
+
+        <label style="font-weight: 800; color: var(--secondary); font-size: 14px;">Message</label>
+        <textarea id="contactMessage" rows="5" placeholder="Type your message here..." style="width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 20px; border-radius: 12px; border: 2px solid rgba(74, 144, 226, 0.2); font-family: inherit; font-size: 16px; resize: none; box-sizing: border-box; background: white; color: var(--text-main);"></textarea>
+
+        <button onclick="submitContactForm()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255,111,97,0.3);">Send Email</button>
+    </div>
+</div>
+
 <script src="https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js"></script>
 <script src="data.js"></script>
 <script src="map-c2-europe.js"></script>
+<script src="scripture.js"></script>
 <script src="app.js"></script>
 
 </body>

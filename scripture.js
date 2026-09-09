@@ -1,0 +1,293 @@
+/* ==========================================================================
+   SCRIPTURE SONG DATABASE
+   ========================================================================== */
+const scriptureData = {
+    1: {
+        title: "Exodus 20: 1-17",
+        desc: "The Ten Commandments",
+        audio: "audio/c1/scripture/Exodus-20.m4a",
+        lyrics: [
+            { week: 1, time: 5.0, text: "And God spake all these words, saying, I am the LORD thy God," },
+            { week: 2, time: 12.0, text: "which have brought thee out of the land of Egypt, out of the house of bondage." },
+            { week: 3, time: 23.0, text: "Thou shalt have no other gods before me." },
+            { week: 4, time: 28.0, text: "Thou shalt have no other gods before me." },
+            { week: 5, time: 37.0, text: "of anything that is in heaven above, or that is in the earth beneath," },
+            { week: 6, time: 45.0, text: "or that is in the water under the earth." },
+            { week: 7, time: 51.0, text: "Thou shalt not bow down thyself to them, nor serve them:" },
+            { week: 8, time: 57.0, text: "for I the LORD thy God am a jealous God, visiting the iniquity of the fathers upon the children" },
+            { week: 9, time: 68.0, text: "unto the third and fourth generation of them that hate me;" },
+            { week: 10, time: 80.0, text: "and shewing mercy unto thousands of them that love me, and keep my commandments." },
+            { week: 11, time: 90.0, text: "Thou shalt not take the name of the LORD thy God in vain;" },
+            { week: 12, time: 97.0, text: "For the LORD will not hold him guiltless that taketh his name in vain." },
+            { week: 13, time: 106.0, text: "Remember the sabbath day, to keep it holy. Six days shalt thou labour, and do all thy work:" },
+            { week: 14, time: 119.0, text: "but on the seventh day is the sabbath of the LORD thy God: in it thou shalt not do any work," },
+            { week: 15, time: 130.0, text: "thou, nor thy son, nor thy daughter, thy manservant, nor thy maidservant, nor thy cattle, nor thy stranger that is within thy gates:" },
+            { week: 16, time: 148.0, text: "for in six days, the LORD made heaven and earth, the sea, and all that in them is," },
+            { week: 17, time: 161.0, text: "and rested the seventh day: wherefore the LORD blessed the sabbath day, and hallowed it." },
+            { week: 18, time: 175.0, text: "Honour thy father and thy mother: that thy days may be long" },
+            { week: 19, time: 184.0, text: "upon the land which the LORD thy God giveth thee. Thou shalt not kill." },
+            { week: 20, time: 195.0, text: "Thou shalt not commit adultery. Thou shalt not steal." },
+            { week: 21, time: 201.0, text: "Thou shalt not bear false witness against thy neighbour." },
+            { week: 22, time: 209.0, text: "Thou shalt not covet thy neighbour's house, thou shalt not covet thy neighbour's wife," },
+            { week: 23, time: 220.0, text: "Nor his manservant, nor his maidservant, nor his ox, nor his ass, nor anything that is thy neighbour's." },
+        ]
+    },
+    2: {
+        title: "Genesis 1: 1-27",
+        desc: "The Creation Story",
+        audio: "audio/c2/scripture/Genesis-1.m4a",
+        lyrics: [
+            { week: 1, time: 3.0, text: "1 In the beginning God created the heaven and the earth." },
+            { week: 1, time: 9.0, text: "2 And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters." },
+            { week: 2, time: 19.0, text: "3 And God said, Let there be light: and there was light." },
+            { week: 2, time: 23.0, text: "4 And God saw the light, that it was good: and God divided the light from the darkness." },
+            { week: 3, time: 30.0, text: "5 And God called the light Day, and the darkness he called Night. And the evening and the morning were the first day." },
+            { week: 4, time: 40.0, text: "6 And God said, Let there be a firmament in the midst of the waters, and let it divide the waters from the waters." },
+            { week: 5, time: 51.0, text: "7 And God made the firmament, and divided the waters which were under the firmament from the waters which were above the firmament: and it was so." },
+            { week: 5, time: 65.0, text: "8 And God called the firmament Heaven. And the evening and the morning were the second day." },
+            { week: 6, time: 74.0, text: "9 And God said, Let the waters under the heaven be gathered together unto one place, and let the dry land appear: and it was so." },
+            { week: 7, time: 87.0, text: "10 And God called the dry land Earth; and the gathering together of the waters called he Seas: and God saw that it was good." },
+            { week: 8, time: 102.0, text: "11 And God said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so." },
+            { week: 9, time: 114.0, text: "12 And the earth brought forth grass, and herb yielding seed after his kind, and the tree yielding fruit, whose seed was in itself, after his kind: and God saw that it was good." },
+            { week: 10, time: 126.0, text: "13 And the evening and the morning were the third day." },
+            { week: 10, time: 132.0, text: "14 And God said, Let there be lights in the firmament of the heaven to divide the day from the night; and let them be for signs, and for seasons, and for days, and years:" },
+            { week: 11, time: 147.0, text: "15 And let them be for lights in the firmament of the heaven to give light upon the earth: and it was so." },
+            { week: 13, time: 155.0, text: "16 And God made two great lights; the greater light to rule the day, and the lesser light to rule the night: he made the stars also." },
+            { week: 13, time: 169.0, text: "17 And God set them in the firmament of the heaven to give light upon the earth," },
+            { week: 14, time: 176.0, text: "18 And to rule over the day and over the night, and to divide the light from the darkness: and God saw that it was good." },
+            { week: 15, time: 190.0, text: "19 And the evening and the morning were the fourth day." },
+            { week: 15, time: 196.0, text: "20 And God said, Let the waters bring forth abundantly the moving creature that hath life, and fowl that may fly above the earth in the open firmament of heaven." },
+            { week: 16, time: 213.0, text: "21 And God created great whales, and every living creature that moveth, which the waters brought forth abundantly, after their kind, and every winged fowl after his kind: and God saw that it was good." },
+            { week: 17, time: 235.0, text: "22 And God blessed them, saying, Be fruitful, and multiply, and fill the waters in the seas, and let fowl multiply in the earth." },
+            { week: 18, time: 249.0, text: "23 And the evening and the morning were the fifth day." },
+            { week: 18, time: 254.0, text: "24 And God said, Let the earth bring forth the living creature after his kind, cattle, and creeping thing, and beast of the earth after his kind: and it was so." },
+            { week: 19, time: 268.0, text: "25 And God made the beast of the earth after his kind, and cattle after their kind, and every thing that creepeth upon the earth after his kind: and God saw that it was good." },
+            { week: 20, time: 285.0, text: "26 And God said, Let us make man in our image, after our likeness: and let them have dominion over the fish of the sea, and over the fowl of the air, and over the cattle, and over all the earth, and over every creeping thing that creepeth upon the earth." },
+            { week: 21, time: 310.0, text: "27 So God created man in his own image, in the image of God created he him; male and female created he them." },
+        ]
+    },
+    3: {
+        title: "John 1: 1-7",
+        desc: "In the beginning was the Word",
+        audio: "audio/c3/scripture/John-1.m4a",
+        lyrics: [
+            { week: 1, time: 9.0, text: "1 In the beginning was the Word," },
+            { week: 2, time: 14.0, text: "and the Word was with God, and the Word was God." },
+            { week: 3, time: 25.0, text: "2 The same was in the beginning with God." },
+            { week: 4, time: 31.0, text: "3 All things were made by Him;" },
+            { week: 5, time: 35.0, text: "and without Him was made nothing that was made." },
+            { week: 6, time: 46.0, text: "4 In Him was life; and the life was the light of men." },
+            { week: 7, time: 56.0, text: "5 And the light shineth in the darkness;" },
+            { week: 8, time: 61.0, text: "and the darkness did not comprehend it." },
+            { week: 9, time: 66.0, text: "6 There was a man sent from God, whose name was John." },
+            { week: 10, time: 76.0, text: "7 This man came for a witness," },
+            { week: 11, time: 81.0, text: "to give testimony of the light," },
+            { week: 12, time: 86.0, text: "that all men might believe through him." },
+            { week: 13, time: 100.0, text: "in principio erat Verbum" },
+            { week: 14, time: 105.0, text: "et Verbum erat apud Deum er Dues erat Verbum" },
+            { week: 15, time: 117.0, text: "hoc erat in principio apud Deum" },
+            { week: 16, time: 123.0, text: "Omnia per ipsum facta sunt" },
+            { week: 17, time: 127.0, text: "et sine ipso factum est nihil quod factum est" },
+            { week: 18, time: 137.0, text: "in ipso vita erat et vita erat lux hominum" },
+            { week: 19, time: 146.0, text: "et lux in tenebris lucet" },
+            { week: 20, time: 151.0, text: "et tenebrae eam non comprehenderunt" },
+            { week: 21, time: 159.0, text: "fuit homo missus a Deo cui nomen erat lohannes" },
+            { week: 22, time: 169.0, text: "hic venit in testimonium" },
+            { week: 23, time: 174.0, text: "ut testimonium perhiberet de lumine" },
+            { week: 24, time: 180.0, text: "ut omnes crederent per illum " },
+        ]
+    }
+};
+/* ==========================================================================
+   SCRIPTURE KARAOKE ENGINE
+   ========================================================================== */
+let scriptureAudio = new Audio();
+let scriptureActiveLine = -1;
+
+// Updates the Focus Menu button text
+function updateScriptureButtonUI() {
+    const titleEl = document.getElementById('scriptureBtnTitle');
+    const descEl = document.getElementById('scriptureBtnDesc');
+    if (titleEl && descEl && scriptureData[currentCycle]) {
+        titleEl.textContent = scriptureData[currentCycle].title;
+        descEl.textContent = scriptureData[currentCycle].desc;
+    }
+}
+
+function openScriptureMenu() {
+    document.getElementById('challengeContainer').classList.remove('active');
+    document.getElementById('scriptureContainer').classList.add('active');
+    activeChallengePage = 'scriptureContainer';
+    
+    // Load the saved week preference for this specific cycle!
+    const savedWeek = localStorage.getItem(`cycle${currentCycle}_scriptureMaxWeek`);
+    const selectEl = document.getElementById('scriptureWeekSelect');
+    if (savedWeek) {
+        selectEl.value = savedWeek;
+    } else {
+        selectEl.value = "24"; // Default to full song
+    }
+
+    scriptureAudio.src = scriptureData[currentCycle].audio; 
+    buildScriptureLyrics();
+}
+
+function exitScriptureMenu() {
+    scriptureAudio.pause();
+    document.getElementById('scriptureContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer';
+}
+
+function toggleScriptureAudio() {
+    const playBtn = document.getElementById('scripturePlayBtn');
+    if (scriptureAudio.paused) {
+        scriptureAudio.play();
+        playBtn.classList.add('playing');
+        playBtn.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+    } else {
+        scriptureAudio.pause();
+        playBtn.classList.remove('playing');
+        playBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+    }
+}
+
+function restartScriptureAudio() {
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    scriptureAudio.currentTime = 0;
+    
+    // Clear the active lyric highlight
+    if (scriptureActiveLine !== -1) {
+        const oldEl = document.getElementById(`lyric-${scriptureActiveLine}`);
+        if (oldEl) oldEl.classList.remove('active');
+        scriptureActiveLine = -1;
+    }
+    
+    // Instantly reset the ring
+    const progressRing = document.getElementById('scriptureProgressBar');
+    if (progressRing) progressRing.style.strokeDashoffset = "195";
+
+    // Scroll the lyrics back to the top
+    const container = document.getElementById('scriptureLyricsContainer');
+    if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleScriptureWeekChange() {
+    const selectEl = document.getElementById('scriptureWeekSelect');
+    const selectedWeek = parseInt(selectEl.value);
+    
+    // Save their choice to the phone's memory
+    localStorage.setItem(`cycle${currentCycle}_scriptureMaxWeek`, selectedWeek);
+    
+    // Instant Stop Logic: Are we already playing past this new limit?
+    const currentLyrics = scriptureData[currentCycle].lyrics;
+    const stopLine = currentLyrics.find(line => line.week > selectedWeek);
+    
+    if (stopLine && scriptureAudio.currentTime >= stopLine.time - 0.2) {
+        scriptureAudio.pause();
+        
+        // Reset the play button SVG
+        const playBtn = document.getElementById('scripturePlayBtn');
+        playBtn.classList.remove('playing');
+        playBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+        
+        // Rewind to right before the forbidden week starts
+        scriptureAudio.currentTime = stopLine.time - 0.2;
+        
+        // Force the progress ring to update instantly
+        const progressRing = document.getElementById('scriptureProgressBar');
+        if (progressRing && scriptureAudio.duration) {
+            const percent = scriptureAudio.currentTime / scriptureAudio.duration;
+            progressRing.style.strokeDashoffset = 195 - (percent * 195);
+        }
+    }
+}
+
+function buildScriptureLyrics() {
+    const container = document.getElementById('scriptureLyricsContainer');
+    container.innerHTML = "";
+    
+    const currentLyrics = scriptureData[currentCycle].lyrics;
+    
+    currentLyrics.forEach((line, index) => {
+        const div = document.createElement('div');
+        div.className = 'lyric-line';
+        div.id = `lyric-${index}`;
+        div.textContent = line.text;
+        
+        div.onclick = () => {
+            scriptureAudio.currentTime = line.time;
+            if (scriptureAudio.paused) toggleScriptureAudio();
+        };
+        
+        container.appendChild(div);
+    });
+    
+    const spacer = document.createElement('div');
+    spacer.style.height = "50vh";
+    container.appendChild(spacer);
+}
+
+// THE KARAOKE TRACKER
+scriptureAudio.addEventListener('timeupdate', () => {
+    const currentTime = scriptureAudio.currentTime;
+    const selectedWeek = parseInt(document.getElementById('scriptureWeekSelect').value);
+    const currentLyrics = scriptureData[currentCycle].lyrics;
+    
+    const progressRing = document.getElementById('scriptureProgressBar');
+    if (progressRing && scriptureAudio.duration) {
+        const percent = scriptureAudio.currentTime / scriptureAudio.duration;
+        const offset = 195 - (percent * 195);
+        progressRing.style.strokeDashoffset = offset;
+    }
+
+    // 1. Auto-Pause Logic (FOOLPROOF)
+    // Find the very first line of the forbidden week, no matter where we are in the song
+    const stopLine = currentLyrics.find(line => line.week > selectedWeek);
+    
+    // If we hit or pass that line's timestamp, snap it back and pause!
+    if (stopLine && currentTime >= stopLine.time - 0.2) {
+        scriptureAudio.pause();
+        
+        const playBtn = document.getElementById('scripturePlayBtn');
+        playBtn.classList.remove('playing');
+        playBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+        
+        scriptureAudio.currentTime = stopLine.time - 0.2; 
+        return;
+    }
+
+    // 2. Find the active line
+    let newActiveLine = -1;
+    for (let i = currentLyrics.length - 1; i >= 0; i--) {
+        if (currentTime >= currentLyrics[i].time) {
+            newActiveLine = i;
+            break;
+        }
+    }
+
+    // 3. Animate and scroll
+    if (newActiveLine !== scriptureActiveLine && newActiveLine !== -1) {
+        if (scriptureActiveLine !== -1) {
+            const oldEl = document.getElementById(`lyric-${scriptureActiveLine}`);
+            if (oldEl) oldEl.classList.remove('active');
+        }
+        
+        scriptureActiveLine = newActiveLine;
+        const newEl = document.getElementById(`lyric-${scriptureActiveLine}`);
+        
+        if (newEl) {
+            newEl.classList.add('active');
+            newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+});
+
+scriptureAudio.addEventListener('ended', () => {
+    const playBtn = document.getElementById('scripturePlayBtn');
+    playBtn.classList.remove('playing');
+    playBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+    
+    const progressRing = document.getElementById('scriptureProgressBar');
+    if (progressRing) progressRing.style.strokeDashoffset = "195";
+});

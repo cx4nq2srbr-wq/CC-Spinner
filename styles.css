@@ -803,6 +803,14 @@ body.dark-mode #taAnswerContent { color: #cbd5e1; }
 body.dark-mode #taAnswerContent b, body.dark-mode #taAnswerContent strong { color: #ffffff; font-weight: 800; }
 body.dark-mode #taTimerDisplay { color: #f8fafc !important; }
 
+/* Contact Form Dark Mode */
+body.dark-mode #contactReason, 
+body.dark-mode #contactMessage {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
 /* ==========================================================================
    11. BOTTOM NAVIGATION BAR
    ========================================================================== */
@@ -1138,4 +1146,98 @@ body.dark-mode #triviaPrompt { background: rgba(30, 41, 59, 0.9); border-color: 
     border-radius: 8px;
     margin-top: 15px;
     touch-action: none;
+}
+
+/* ==========================================================================
+   SCRIPTURE KARAOKE STYLES
+   ========================================================================== */
+#scriptureLyricsContainer {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden; /* THE FIX: Completely disables side-to-side scrolling */
+    padding: 20px 25px;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+    mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+}
+
+/* Hide scrollbar for a clean Apple Music look */
+#scriptureLyricsContainer::-webkit-scrollbar { display: none; }
+
+.lyric-line {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-muted);
+    opacity: 0.3;
+    margin-bottom: 25px;
+    transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1.3);
+    cursor: pointer;
+    transform-origin: left center;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+    max-width: 85%; 
+}
+
+.lyric-line.active {
+    opacity: 1;
+    color: var(--primary);
+    transform: scale(1.15);
+    text-shadow: 0 4px 15px rgba(255,111,97,0.2);
+}
+
+/* Dark Mode Overrides */
+body.dark-mode .lyric-line { color: #94a3b8; }
+body.dark-mode .lyric-line.active { color: #f8fafc; text-shadow: 0 4px 15px rgba(255,255,255,0.2); }
+
+/* Progress Ring Play Button Wrapper */
+.scripture-player-wrap {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+.scripture-player-wrap:active .scripture-play-btn {
+    transform: scale(0.85); /* Triggers the squish effect on tap */
+}
+
+/* The SVG Ring Graphics */
+.scripture-progress-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 70px; height: 70px;
+    transform: rotate(-90deg); /* Starts the ring at 12 o'clock */
+}
+.scripture-progress-bg {
+    fill: none;
+    stroke: rgba(74, 144, 226, 0.2);
+    stroke-width: 4;
+}
+.scripture-progress-bar {
+    fill: none;
+    stroke: #ef4444; /* Turns red to match the audio button! */
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s linear;
+}
+
+/* Overriding the standard audio-btn for this specific central placement */
+.scripture-play-btn {
+    position: relative;
+    transform: none;
+    top: auto; right: auto; left: auto;
+    width: 52px; height: 52px;
+    display: flex !important;
+    pointer-events: none; 
+    margin: 0;
+    background: var(--primary) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 4px 10px rgba(255,111,97,0.3);
 }

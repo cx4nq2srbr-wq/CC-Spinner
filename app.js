@@ -5,7 +5,7 @@ let currentMode = 'spinner';
 
 function switchMode(mode) {
     stopVoiceover();
-const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer', 'mapMenuContainer', 'mapGameContainer', 'triviaMenuContainer', 'triviaGameContainer'];
+const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer', 'mapMenuContainer', 'mapGameContainer', 'triviaMenuContainer', 'triviaGameContainer', 'scriptureContainer'];
     // THE FIX: Double-tap logic to return to the Focus menu
     if (mode === 'challenge' && currentMode === 'challenge') {
         challengeIds.forEach(id => {
@@ -196,6 +196,7 @@ function changeCycle(cycleNum) {
         updateReviewDisplay();
     }
     updateFlagUI();
+    updateScriptureButtonUI();
 }
 
 // --- Window Load & App Config ---
@@ -227,6 +228,7 @@ window.onload = function() {
     .then(m => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = m.version; })
     .catch(() => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = "not available"; });
     updateFlagUI();
+    updateScriptureButtonUI();
 };
 
 function saveToDevice() {
@@ -2240,33 +2242,31 @@ function nextTriviaQuestion() {
         return;
     }
 
-    // Pull the next custom question from the deck
     currentTrivia = triviaQueue.shift();
 
     document.getElementById('triviaSubjectLabel').textContent = `${subjectIcons[currentTrivia.subject]} ${currentTrivia.subject}`;
     document.getElementById('triviaPrompt').textContent = currentTrivia.q;
 
-    // Map the custom options to our button logic
-    let allOptions = [
-        { text: currentTrivia.options[0], isCorrect: currentTrivia.answerIndex === 0 },
-        { text: currentTrivia.options[1], isCorrect: currentTrivia.answerIndex === 1 },
-        { text: currentTrivia.options[2], isCorrect: currentTrivia.answerIndex === 2 },
-        { text: currentTrivia.options[3], isCorrect: currentTrivia.answerIndex === 3 }
-    ];
+    // THE FIX: Dynamically handle any amount of options (2, 3, or 4)
+    let allOptions = currentTrivia.options.map((text, idx) => {
+        return { text: text, isCorrect: currentTrivia.answerIndex === idx };
+    });
 
-    // Shuffle the options so the correct answer isn't always in the same spot!
+    // Shuffle the options
     allOptions.sort(() => Math.random() - 0.5);
 
-    // Populate the buttons
+    // Populate the buttons and completely hide any unused ones!
     for (let i = 0; i < 4; i++) {
         const btn = document.getElementById(`triviaBtn${i}`);
-        btn.innerHTML = allOptions[i].text;
-        btn.className = 'trivia-option-btn'; // Reset colors from previous question
-        
-        // NEW: Tag the button so we can easily find it later!
-        btn.dataset.correct = allOptions[i].isCorrect; 
-        
-        btn.onclick = () => processTriviaAnswer(i, allOptions[i].isCorrect, btn);
+        if (i < allOptions.length) {
+            btn.innerHTML = allOptions[i].text;
+            btn.className = 'trivia-option-btn'; 
+            btn.dataset.correct = allOptions[i].isCorrect; 
+            btn.style.display = 'flex'; // Ensure it's visible
+            btn.onclick = () => processTriviaAnswer(i, allOptions[i].isCorrect, btn);
+        } else {
+            btn.style.display = 'none'; // Hide the empty ones!
+        }
     }
 }
 
@@ -2341,4 +2341,43 @@ function closeTriviaResults() {
     stopConfetti('triviaConfettiCanvas');
     document.getElementById('triviaResultsOverlay').style.display = 'none';
     exitTriviaGame();
+}
+
+/* ==========================================================================
+   CONTACT FORM ENGINE
+   ========================================================================== */
+function openContactModal() {
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    document.getElementById('contactMessage').value = ""; // Clear old text
+    document.getElementById('contactModalOverlay').style.display = 'flex';
+}
+
+function closeContactModal() {
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    document.getElementById('contactModalOverlay').style.display = 'none';
+}
+
+function submitContactForm() {
+    const reason = document.getElementById('contactReason').value;
+    const message = document.getElementById('contactMessage').value;
+    
+    if (!message.trim()) {
+        alert("Please enter a message before sending!");
+        return;
+    }
+
+    // PUT YOUR EMAIL ADDRESS HERE:
+    const email = "luke.abram.gibson+ccspinner@gmail.com"; 
+    
+    // Format the subject and body for the email client
+    const subject = encodeURIComponent(`CC Spinner App: ${reason}`);
+    
+    // Grabs their current version and cycle to help you debug!
+    const appVersion = document.getElementById('app-version').innerText;
+    const body = encodeURIComponent(`${message}\n\n---\nDiagnostic Info:\nReason: ${reason}\nApp Version: ${appVersion}\nActive Cycle: ${currentCycle}`);
+    
+    // Trigger the device's native email app
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    
+    closeContactModal();
 }
