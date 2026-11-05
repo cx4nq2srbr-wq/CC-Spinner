@@ -803,13 +803,36 @@ body.dark-mode #taAnswerContent { color: #cbd5e1; }
 body.dark-mode #taAnswerContent b, body.dark-mode #taAnswerContent strong { color: #ffffff; font-weight: 800; }
 body.dark-mode #taTimerDisplay { color: #f8fafc !important; }
 
+/* Contact Form Base (Light Mode) */
+#contactReason, 
+#contactMessage {
+    color: #1e293b !important; /* Forces dark text in the box */
+    background: #ffffff !important; /* Keeps the box white */
+}
+
+/* Darkens the "Type your message here..." placeholder text */
+#contactMessage::placeholder {
+    color: #64748b !important; 
+    opacity: 1; 
+}
+
 /* Contact Form Dark Mode */
 body.dark-mode #contactReason, 
 body.dark-mode #contactMessage {
-    background: #1e293b;
-    color: #f8fafc;
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
 }
+
+body.dark-mode #contactMessage::placeholder {
+    color: #94a3b8 !important;
+}
+
+body.dark-mode .tutorial-card { background: rgba(30, 41, 59, 0.95) !important; border: 1px solid rgba(255, 255, 255, 0.1); }
+
+body.dark-mode #walkthroughTooltip { background: rgba(30, 41, 59, 0.95) !important; border: 1px solid rgba(255, 255, 255, 0.1); }
+body.dark-mode #walkTitle { color: #f8fafc !important; }
+body.dark-mode #walkDesc { color: #cbd5e1 !important; }
 
 /* ==========================================================================
    11. BOTTOM NAVIGATION BAR
@@ -1240,4 +1263,62 @@ body.dark-mode .lyric-line.active { color: #f8fafc; text-shadow: 0 4px 15px rgba
     border: none !important;
     color: white !important;
     box-shadow: 0 4px 10px rgba(255,111,97,0.3);
+}
+
+/* ==========================================================================
+   SPLASH SCREEN ANIMATIONS
+   ========================================================================== */
+   @keyframes splashFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+@keyframes splashPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+    50% { transform: scale(1.05); box-shadow: 0 15px 35px rgba(0,0,0,0.25); }
+}
+
+.splash-logo {
+    animation: splashFloat 3s ease-in-out infinite;
+}
+
+.splash-btn {
+    animation: splashPulse 2s infinite;
+}
+
+/* Splash Screen Solid Backgrounds & Layout */
+.splash-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc; /* Crisp, clean off-white for light mode */
+    transition: opacity 0.4s ease;
+}
+.splash-text {
+    color: #334155;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode .splash-bg {
+    background: #0f172a !important; /* The !important tag is required to override the inline HTML */
+}
+body.dark-mode .splash-text {
+    color: #cbd5e1;
+}
+
+/* Tutorial Mask Inactivity Pulse Effect */
+@keyframes walkthroughPulse {
+    0% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.75), inset 0 0 0 2px var(--primary), inset 0 0 0px rgba(255,111,97,0); }
+    50% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.75), inset 0 0 0 4px var(--primary), inset 0 0 25px rgba(255,111,97,0.8); }
+    100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.75), inset 0 0 0 2px var(--primary), inset 0 0 0px rgba(255,111,97,0); }
+}
+.walkthrough-active-pulse {
+    animation: walkthroughPulse 1.5s infinite ease-in-out !important;
 }

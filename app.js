@@ -71,8 +71,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let isSpinning = false;
 let activeChallengePage = 'challengeContainer'; // Remembers if they were in a menu or a game
 let pendingTAFinish = false; // Flags if the timer hit 0 on another tab
-let lastSpun = null; // The one we just spun (the "mistake")
-let previousSpun = null;  // The one BEFORE that (the "rewind destination")
+let spinHistory = [];
 
 const subjects = ["Bible", "English", "Geography", "History", "Latin", "Math", "Science", "Timeline"];
 const subjectIcons = {
@@ -202,6 +201,10 @@ function changeCycle(cycleNum) {
 // --- Window Load & App Config ---
 window.onload = function() {
   document.getElementById('cyclePicker').value = currentCycle;
+
+  const splashPicker = document.getElementById('splashCyclePicker');
+  if (splashPicker) splashPicker.value = currentCycle;
+
   lessonData = cycleData[currentCycle];
   
   updateSettingsIcons();
@@ -229,6 +232,11 @@ window.onload = function() {
     .catch(() => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = "not available"; });
     updateFlagUI();
     updateScriptureButtonUI();
+    // Reveal the splash screen ONLY after the layout and fonts have completely settled
+    setTimeout(() => {
+        const splashInner = document.getElementById('splashContentWrapper');
+        if (splashInner) splashInner.style.opacity = '1';
+    }, 250);
 };
 
 function saveToDevice() {
@@ -311,16 +319,16 @@ function spinBoth() {
       
       const lesson = lessonData[subject][week];
 
-      previousSpun = lastSpun ? { ...lastSpun } : null; 
-
-      lastSpun = {
+      spinHistory.push({
         subject: subject, 
         week: week,
         sIdx: subIdx,   
         wIdx: weekIdx,   
         prompt: lesson.p,
         answer: lesson.a
-      };
+      });
+      // Cap the history at 50 spins just to be safe with memory
+      if (spinHistory.length > 50) spinHistory.shift();
 
       promptDiv.textContent = lesson.p;
       ansDiv.innerHTML = lesson.a;
@@ -418,12 +426,15 @@ function toggleAnswer() {
 
 function undoLastSpin() {
     stopVoiceover();
-    if (!lastSpun) return;
+    if (spinHistory.length === 0) return;
 
-    // 1. Put the "mistake" back on the grid
-    gridState[lastSpun.subject][lastSpun.week] = true;
-    if (lastSpun.subject === "Latin" && currentCycle === 2) {
-        const group = latinTwinGroups.find(g => g.includes(lastSpun.week));
+    // 1. Pop the most recent spin off the top of the stack
+    const undoneSpin = spinHistory.pop();
+
+    // 2. Put it back on the grid
+    gridState[undoneSpin.subject][undoneSpin.week] = true;
+    if (undoneSpin.subject === "Latin" && currentCycle === 2) {
+        const group = latinTwinGroups.find(g => g.includes(undoneSpin.week));
         if (group) {
             group.forEach(twinWeek => {
                 gridState["Latin"][twinWeek] = true;
@@ -431,8 +442,10 @@ function undoLastSpin() {
         }
     }
     
-    // 2. Rewind the UI
-    if (previousSpun) {
+    // 3. Rewind the UI to the NEW top of the stack (if there is one)
+    if (spinHistory.length > 0) {
+        const prev = spinHistory[spinHistory.length - 1]; 
+        
         const subReel = document.getElementById('subjectReel');
         const weekReel = document.getElementById('weekReel');
 
@@ -452,30 +465,43 @@ function undoLastSpin() {
 
         void subReel.offsetHeight; 
         
-        prepVoiceover(previousSpun.subject, previousSpun.week, 'audioBtnMain');
+        prepVoiceover(prev.subject, prev.week, 'audioBtnMain');
+        prepInfoBtn(prev.subject, prev.week, 'infoBtnMain');
 
         subReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
         weekReel.style.transition = "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
 
-        subReel.style.transform = `translateY(-${previousSpun.sIdx * 80}px)`;
-        weekReel.style.transform = `translateY(-${previousSpun.wIdx * 80}px)`;
+        subReel.style.transform = `translateY(-${prev.sIdx * 80}px)`;
+        weekReel.style.transform = `translateY(-${prev.wIdx * 80}px)`;
 
-        document.getElementById('prompt').textContent = previousSpun.prompt;
-        document.getElementById('answerContent').innerHTML = previousSpun.answer;
+        document.getElementById('prompt').textContent = prev.prompt;
+        document.getElementById('answerContent').innerHTML = prev.answer;
         
-        lastSpun = { ...previousSpun };
-        previousSpun = null; 
+        document.getElementById('undoBtn').disabled = false; // Still history left!
     } else {
+        // The stack is completely empty!
         document.getElementById('subjectReel').style.transform = `translateY(0)`;
         document.getElementById('weekReel').style.transform = `translateY(0)`;
         document.getElementById('prompt').textContent = "Spin to start!";
         document.getElementById('answerContent').textContent = "";
-        lastSpun = null;
+        
+        const audioBtn = document.getElementById('audioBtnMain');
+        if (audioBtn) audioBtn.style.display = 'none';
+        
+        const infoBtn = document.getElementById('infoBtnMain');
+        if (infoBtn) infoBtn.style.display = 'none';
+        
+        document.getElementById('undoBtn').disabled = true; // Disable button
     }
 
-    // 3. Reset UI state
+    // 4. Reset UI state
     document.getElementById('answerContainer').classList.remove('open');
-    document.getElementById('undoBtn').disabled = true;
+    
+    // 5. Re-enable spin button in case they undid from a "Done" state
+    spinBtn.style.background = "var(--primary)"; 
+    spinBtn.disabled = false;
+    setSpinLabel('SPIN');
+    spinBtn.style.fontSize = '';
     
     if (userSettings.haptics && navigator.vibrate) navigator.vibrate(40);
     updateFlagUI();
@@ -485,16 +511,16 @@ function undoLastSpin() {
 
 // NEW: Flagging Logic
 function toggleMistake() {
-    if (!lastSpun) return;
+    const currentSpin = spinHistory.length > 0 ? spinHistory[spinHistory.length - 1] : null;
+    if (!currentSpin) return;
     
-    // Check if the current lesson is already in the bank
-    const idx = mistakesBank.findIndex(m => m.subject === lastSpun.subject && m.week === lastSpun.week);
+    const idx = mistakesBank.findIndex(m => m.subject === currentSpin.subject && m.week === currentSpin.week);
     
     if (idx !== -1) {
-        mistakesBank.splice(idx, 1); // Remove it
+        mistakesBank.splice(idx, 1); 
     } else {
-        mistakesBank.push({ subject: lastSpun.subject, week: lastSpun.week }); // Add it
-        if (userSettings.haptics && navigator.vibrate) navigator.vibrate([20, 50, 20]); // Double buzz!
+        mistakesBank.push({ subject: currentSpin.subject, week: currentSpin.week }); 
+        if (userSettings.haptics && navigator.vibrate) navigator.vibrate([20, 50, 20]); 
     }
     
     saveToDevice();
@@ -523,12 +549,13 @@ function updateFlagUI() {
     // 1. Sync Main Spinner Flag
     const flagBtn = document.getElementById('flagBtn');
     if (flagBtn) {
-        if (!lastSpun) {
+        const currentSpin = spinHistory.length > 0 ? spinHistory[spinHistory.length - 1] : null;
+        if (!currentSpin) {
             flagBtn.disabled = true;
             flagBtn.classList.remove('flagged');
         } else {
             flagBtn.disabled = false;
-            const isFlagged = mistakesBank.some(m => m.subject === lastSpun.subject && m.week === lastSpun.week);
+            const isFlagged = mistakesBank.some(m => m.subject === currentSpin.subject && m.week === currentSpin.week);
             flagBtn.classList.toggle('flagged', isFlagged);
         }
     }
@@ -777,6 +804,7 @@ function resetGrid() { showResetConfirm(); }
 function resetGridConfirmed() {
   isSpinning = false;
   hideResetConfirm();
+  spinHistory = []; // NEW: Clear the undo stack!
   subjects.forEach(s => {
     gridState[s] = {};
     weeks.forEach(w => gridState[s][w] = true);
@@ -2380,4 +2408,215 @@ function submitContactForm() {
     window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     
     closeContactModal();
+}
+
+/* ==========================================================================
+   SPLASH SCREEN ENGINE
+   ========================================================================== */
+function dismissSplashScreen() {
+    const splash = document.getElementById('splashScreen');
+    if (!splash) return;
+
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(15);
+    playSound(523.25, 'triangle', 0.1, 0.03); 
+    setTimeout(() => playSound(659.25, 'triangle', 0.15, 0.03), 100); 
+
+    splash.style.opacity = '0';
+    
+    setTimeout(() => {
+        splash.style.display = 'none';
+        
+        // NEW: Check if they need the tutorial!
+        if (!localStorage.getItem('hasSeenStudioTutorial')) {
+            showTutorial();
+        }
+    }, 400); 
+}
+
+/* ==========================================================================
+   INTERACTIVE WALKTHROUGH ENGINE
+   ========================================================================== */
+const walkSteps = [
+    { target: null, mode: 'spinner', title: "Welcome!", desc: "Let's take a quick interactive tour to show you how CC Spinner works." },
+    
+    // 1. Spinner
+    { target: 'spinBtn', mode: 'spinner', title: "The Spinner", desc: "Tap the SPIN button below to randomly select memory work.", interactive: true },
+    { target: 'flagBtn', mode: 'spinner', title: "Flag for Review", desc: "Tap the Flag button here (or in the Review tab) to add a lesson to your Mistake Bank. You can practice them later in the Focus games!" },
+    { target: 'answerContainer', mode: 'spinner', title: "Songs & Extras", desc: "When a lesson has an accompanying song or map, an Audio or Info (i) button will appear right here." },
+    { target: 'undoBtn', mode: 'spinner', title: "Undo Spin", desc: "Made a mistake or got interrupted? The Undo button reverses your last spin." },
+
+    // 2. Review
+    { target: 'nav-review', mode: 'spinner', title: "The Review Tab", desc: "Now, tap the Review tab at the bottom to browse your memory work sequentially.", interactive: true },
+    { target: 'reviewSubjectLabel', mode: 'review', title: "Change Subject", desc: "Tap the Subject name here to open the quick-selector menu.", interactive: true },
+    { target: 'pickerGrid', mode: 'review', title: "Quick Select", desc: "Tap any subject in this grid to jump straight to it.", interactive: true, tooltipPos: '15%', keepPickerOpen: true },
+    { target: 'reviewWeekLabel', mode: 'review', title: "Change Week", desc: "You can also tap the Week number to jump to a specific week, or use the arrows to go one-by-one." },
+    
+    // 3. Lessons Grid
+    { target: 'nav-grid', mode: 'review', title: "The Lessons Tab", desc: "Next, tap the Lessons tab. This controls the entire app.", interactive: true },
+    { target: 'gridContent', mode: 'grid', title: "The Master Grid", desc: "This tracks your progress. White, green (or black in dark mode) squares are active. Grey squares are blocked or finished.", tooltipPos: '80%' },
+    { target: 'grid', mode: 'grid', title: "Block a Subject", desc: "Tap a Subject name at the very top to instantly block or allow that entire column.", tooltipPos: '80%' },
+    { target: 'grid', mode: 'grid', title: "Block a Week", desc: "Tap a Week number on the left side to instantly block or allow that entire row.", tooltipPos: '80%' },
+    { target: 'gridControlsRow', mode: 'grid', title: "Set Your Pace", desc: "Change your Cycle here, and adjust your Max Week to match where you are in the school year." },
+    { target: 'resetGridBtnTour', mode: 'grid', title: "Start Fresh", desc: "Once you clear the board for the week, you can start over. Tap 'Reset Grid' to see what happens!", interactive: true },
+    { target: 'confirmResetBtnTour', mode: 'grid', title: "Confirm Reset", desc: "Tap 'Yes, Reset' to clear the board. Don't worry, we won't lose your custom settings or Mistake Bank!", interactive: true },
+    
+    // 4. Focus
+    { target: 'nav-challenge', mode: 'grid', title: "The Focus Tab", desc: "Ready for a challenge? Tap the Focus tab to explore the games.", interactive: true },
+    { target: 'challengeContainer', mode: 'challenge', title: "Challenge Modes", desc: "Here you can review flagged mistakes, race the clock in Time Attack, sing Scripture songs, or take a Trivia Quiz.", tooltipPos: '85%' },
+    
+    { target: null, mode: 'spinner', title: "You're All Set!", desc: "You can replay this tutorial anytime from the Settings tab. Have fun mastering your memory work!" }
+];
+
+let currentWalkStep = 0;
+let walkPulseTimeout = null; 
+
+function showTutorial() {
+    currentWalkStep = 0;
+    document.getElementById('walkthroughTooltip').style.display = 'block';
+    document.getElementById('walkthroughMask').style.display = 'block';
+    renderWalkStep();
+}
+
+function renderWalkStep() {
+    const step = walkSteps[currentWalkStep];
+    const maskEl = document.getElementById('walkthroughMask');
+    
+    // 1. INSTANT UI UPDATES & RESET TIMERS
+    clearTimeout(walkPulseTimeout);
+    if (maskEl) maskEl.classList.remove('walkthrough-active-pulse');
+    
+    const counterEl = document.getElementById('walkCounter');
+    if (counterEl) counterEl.textContent = (currentWalkStep + 1) + '/' + walkSteps.length;
+    
+    document.getElementById('walkTitle').textContent = step.title;
+    document.getElementById('walkDesc').textContent = step.desc;
+
+    const nextBtn = document.getElementById('walkNextBtn');
+    
+    if (step.interactive) {
+        nextBtn.textContent = "Tap highlighted area";
+        nextBtn.style.background = "#94a3b8"; 
+        nextBtn.style.boxShadow = "none";
+        nextBtn.style.pointerEvents = "none";
+    } else {
+        nextBtn.textContent = (currentWalkStep === walkSteps.length - 1) ? "Get Started!" : "Next";
+        nextBtn.style.background = (currentWalkStep === walkSteps.length - 1) ? "#22c55e" : "var(--primary)";
+        nextBtn.style.boxShadow = "0 4px 15px rgba(255,111,97,0.3)";
+        nextBtn.style.pointerEvents = "auto";
+    }
+    
+    // 2. STATE CLEANUP
+    if (typeof closePicker === 'function' && !step.keepPickerOpen) closePicker();
+    
+    if (currentMode !== step.mode) {
+        switchMode(step.mode);
+    }
+
+    if (window.currentWalkListener && window.currentWalkTarget) {
+        window.currentWalkTarget.removeEventListener('click', window.currentWalkListener);
+        window.currentWalkTarget = null;
+        window.currentWalkListener = null;
+    }
+
+    // 3. SHOW UI
+    document.getElementById('walkthroughTooltip').style.display = 'block';
+    if (maskEl) maskEl.style.display = 'block';
+
+    // 4. DELAYED SPOTLIGHT CALCULATION
+    setTimeout(() => {
+        const tooltip = document.getElementById('walkthroughTooltip');
+
+        if (step.target) {
+            const el = document.getElementById(step.target);
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                
+                maskEl.style.top = rect.top - 8 + 'px';
+                maskEl.style.left = rect.left - 8 + 'px';
+                maskEl.style.width = rect.width + 16 + 'px';
+                maskEl.style.height = rect.height + 16 + 'px';
+                
+                // NEW: Dynamic Positioning Logic
+                if (step.tooltipPos) {
+                    // Override with custom positioning
+                    tooltip.style.top = step.tooltipPos;
+                    tooltip.style.transform = 'translate(-50%, -50%)';
+                } else if (!step.interactive) {
+                    // For non-interactive steps, move the tooltip right next to the highlight!
+                    if (rect.top > window.innerHeight / 2) {
+                        // Element is low, put tooltip ABOVE it
+                        tooltip.style.top = Math.max(20, rect.top - 20) + 'px';
+                        tooltip.style.transform = 'translate(-50%, -100%)';
+                    } else {
+                        // Element is high, put tooltip BELOW it
+                        tooltip.style.top = Math.min(window.innerHeight - 20, rect.bottom + 20) + 'px';
+                        tooltip.style.transform = 'translate(-50%, 0)';
+                    }
+                } else {
+                    // For interactive steps, default to keeping it out of the way
+                    tooltip.style.top = (rect.bottom + 180 > window.innerHeight) ? '20%' : '75%';
+                    tooltip.style.transform = 'translate(-50%, -50%)';
+                }
+
+                if (step.interactive) {
+                    // Trigger the pulse if they wait 4 seconds to click!
+                    walkPulseTimeout = setTimeout(() => {
+                        if (maskEl && maskEl.style.display !== 'none') {
+                            maskEl.classList.add('walkthrough-active-pulse');
+                        }
+                    }, 4000);
+
+                    window.currentWalkTarget = el;
+                    window.currentWalkListener = () => {
+                        clearTimeout(walkPulseTimeout);
+                        if (maskEl) maskEl.classList.remove('walkthrough-active-pulse');
+                        
+                        // Instantly advance the tutorial instead of hiding it!
+                        nextWalkStep();
+                    };
+                    el.addEventListener('click', window.currentWalkListener, { once: true });
+                }
+            }
+        } else {
+            maskEl.style.top = '50%';
+            maskEl.style.left = '50%';
+            maskEl.style.width = '0px';
+            maskEl.style.height = '0px';
+            tooltip.style.top = '50%';
+            tooltip.style.transform = 'translate(-50%, -50%)';
+        }
+    }, 300);
+}
+
+function nextWalkStep() {
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    if (currentWalkStep < walkSteps.length - 1) {
+        currentWalkStep++;
+        renderWalkStep();
+    } else {
+        skipWalkthrough();
+    }
+}
+
+function skipWalkthrough() {
+    clearTimeout(walkPulseTimeout);
+    const maskEl = document.getElementById('walkthroughMask');
+    if (maskEl) maskEl.classList.remove('walkthrough-active-pulse');
+
+    if (window.currentWalkListener && window.currentWalkTarget) {
+        window.currentWalkTarget.removeEventListener('click', window.currentWalkListener);
+    }
+    
+    if (typeof closePicker === 'function') closePicker();
+    
+    document.getElementById('walkthroughTooltip').style.display = 'none';
+    if (maskEl) maskEl.style.display = 'none';
+    
+    localStorage.setItem('hasSeenStudioTutorial', 'true');
+    switchMode('spinner');
+    playVictoryChime();
+    startConfetti();
+    setTimeout(stopConfetti, 2500);
 }
