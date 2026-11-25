@@ -46,6 +46,7 @@ body {
 }
 
 input, button, select, textarea {
+  font-family: inherit; /* NEW: Forces all buttons to use the Quicksand font */
   font-size: 16px !important; 
 }
 
@@ -109,14 +110,6 @@ input, button, select, textarea {
   transform: scale(1.01);
 }
 
-#answerContainer.open #answerContent, 
-#reviewAnswerContainer.open #reviewAnswerContent,
-#mistakeAnswerContainer.open #mistakeAnswerContent {
-    max-height: 450px;
-    padding: 20px;
-    border-top: 1px solid rgba(0,0,0,0.05);
-}
-
 #toggleAnswer, #toggleMistakeAnswer {
     width: 100%;
     padding: 18px;
@@ -139,12 +132,22 @@ input, button, select, textarea {
   padding: 0 20px;
   max-height: 0px;   
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* NEW: Smooth iOS scrolling */
+  overscroll-behavior: contain; /* NEW: Prevents page bounce */
   transition: all 0.3s ease;
   color: var(--text-muted);
   font-size: 17px;
   white-space: pre-wrap;
   text-align: center;
   box-sizing: border-box; 
+}
+
+#answerContainer.open #answerContent, 
+#reviewAnswerContainer.open #reviewAnswerContent,
+#mistakeAnswerContainer.open #mistakeAnswerContent {
+    max-height: 38vh; /* NEW: Dynamic height forces scrollbar before pushing off screen */
+    padding: 20px;
+    border-top: 1px solid rgba(0,0,0,0.05);
 }
 
 /* ==========================================================================
@@ -332,51 +335,88 @@ button:disabled svg text {
 /* NEW: Voiceover Audio Button (Circular UI) */
 .audio-btn {
     position: absolute;
-    top: 27px;
+    top: 29px;
     right: 10px;
-    transform: translateY(-50%); /* Perfectly centers it vertically in the blue bar */
+    transform: translateY(-50%); 
     height: 42px;
     width: 42px;
-    background: rgba(255, 255, 255, 0.25); /* Translucent white circle */
+    background: rgba(255, 255, 255, 0.25); 
     border: 2px solid rgba(255, 255, 255, 0.6);
-    border-radius: 50%; /* Makes it a perfect circle */
+    border-radius: 50%; 
     color: white;
-    display: none; /* Hidden until the app verifies the file exists */
+    display: none; 
+    flex-direction: column; 
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 10;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     -webkit-tap-highlight-color: transparent;
 }
 
-.audio-btn:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
-
-.audio-btn:active { 
-    /* Keeps it perfectly centered even when shrinking on tap */
-    transform: translateY(-50%) scale(0.85); 
-}
+.audio-btn:hover { background: rgba(255, 255, 255, 0.4); }
+.audio-btn:active { transform: translateY(-50%) scale(0.85); }
 
 .audio-btn svg { 
     width: 18px; 
     height: 18px; 
     fill: currentColor; 
-    margin-left: 3px; /* Optically centers the play triangle */
+    margin-left: 3px; 
     transition: margin 0.2s ease;
 }
 
-/* Turns red and resets centering when playing/paused */
-.audio-btn.playing {
-    background: #ef4444; 
-    border-color: #ef4444;
-    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+/* Shape-shifts into a straight-sided pill when a full song is found! */
+.audio-btn.has-full {
+    height: 56px; 
+    border-radius: 21px; /* Standard pill shape, extends straight down */
 }
 
-.audio-btn.playing svg {
-    margin-left: 0; 
+/* Pull the play triangle up so it stays perfectly centered in the circular top half */
+.audio-btn.has-full svg {
+    margin-top: -10px;
 }
+
+.audio-btn.has-full::after {
+    content: "";
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    width: 100%;
+    height: 24px;
+    /* Lowered the arc path to Y=7 and the arrow to Y=9/12 to hug the bottom edge */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 24'%3E%3Cpath id='p' d='M 5 7 A 16 16 0 0 0 37 7' fill='none'/%3E%3Ctext font-family='sans-serif' font-size='7' font-weight='800' fill='white' letter-spacing='1.5'%3E%3CtextPath href='%23p' startOffset='50%25' text-anchor='middle'%3EFULL%3C/textPath%3E%3C/text%3E%3Cpolyline points='18 9 21 12 24 9' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.9;
+    transition: opacity 0.2s; 
+}
+
+/* Base playing state (Turns red) */
+.audio-btn.playing {
+    background: #ef4444 !important; 
+    border-color: #ef4444 !important;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4) !important;
+}
+.audio-btn.playing svg { margin-left: 0; }
+
+/* When playing the REGULAR song, instantly shrink back to a perfect circle! */
+.audio-btn.playing-regular {
+    height: 42px !important;
+    border-radius: 50% !important;
+}
+.audio-btn.playing-regular svg {
+    margin-top: 0; /* Drop the stop square back to true center */
+}
+.audio-btn.playing-regular::after {
+    opacity: 0; 
+}
+
+/* When playing the FULL song, keep the pill shape but drop the arrow from the SVG */
+.audio-btn.playing-full::after {
+    /* Matches the lowered Y=7 arc path of the normal state */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 24'%3E%3Cpath id='p' d='M 5 7 A 16 16 0 0 0 37 7' fill='none'/%3E%3Ctext font-family='sans-serif' font-size='7' font-weight='800' fill='white' letter-spacing='1.5'%3E%3CtextPath href='%23p' startOffset='50%25' text-anchor='middle'%3EFULL%3C/textPath%3E%3C/text%3E%3C/svg%3E");
+}
+
 /* ==========================================================================
    6. LESSONS GRID VIEW & CONTROLS
    ========================================================================== */
@@ -482,8 +522,9 @@ button:disabled svg text {
     background: #fdfdfd;
 }
 
-.maxWeekControl {
- display: inline-flex;
+/* NEW: Shared styling for both Min and Max selectors */
+.weekRangeControl {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     background: #fff8d6;
@@ -493,10 +534,14 @@ button:disabled svg text {
     font-weight: 600;
 }
 
-.maxWeekBtn {
-  width: 34px; height: 34px; background: #ffd37a; border: 1px solid #e6a83a;
-  border-radius: 8px; cursor: pointer; font-size: 18px;
+.weekBtn {
+    width: 34px; height: 34px; background: #ffd37a; border: 1px solid #e6a83a;
+    border-radius: 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
 }
+
+/* Dark Mode Overrides for the new classes */
+body.dark-mode .weekRangeControl { background: #334155; border-color: #475569; color: #f8fafc; }
+body.dark-mode .weekBtn { background: #475569; border-color: #64748b; color: #f8fafc; }
 
 .resetHeaderBtn {
   background: none;
@@ -704,8 +749,8 @@ canvas[id$="ConfettiCanvas"], #confettiCanvas {
 
 .prompt-text { min-height: 100px; margin-bottom: 15px; }
 
-.review-always-open #reviewAnswerContent { max-height: none !important; padding: 20px !important; opacity: 1 !important; display: block !important; }
-#reviewAnswerContent { max-height: none !important; padding: 20px !important; opacity: 1 !important; display: block !important; }
+.review-always-open #reviewAnswerContent { max-height: calc(100vh - 400px) !important; padding: 20px !important; opacity: 1 !important; display: block !important; }
+#reviewAnswerContent { max-height: calc(100vh - 400px) !important; padding: 20px !important; opacity: 1 !important; display: block !important; }
 
 #reviewAnswerContainer.review-always-open {
     background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-radius: var(--radius); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: var(--shadow);
@@ -768,7 +813,6 @@ body.dark-mode .weekNumber { background: #334155; color: #f8fafc; }
 body.dark-mode .weekNumber.active { background: #22c55e; color: #fff; }
 body.dark-mode .override { background: #064e3b; }
 body.dark-mode .blocked { background: #7f1d1d; color: #fecaca; }
-body.dark-mode .maxWeekControl { background: #334155; border-color: #475569; color: #f8fafc; }
 body.dark-mode .maxWeekBtn { background: #475569; border-color: #64748b; color: #f8fafc; }
 
 body.dark-mode #reviewPickerOverlay > div, body.dark-mode .confirmBox, body.dark-mode .doneBox { background: #1e293b !important; color: #f8fafc !important; }
@@ -957,7 +1001,7 @@ body.dark-mode #walkDesc { color: #cbd5e1 !important; }
 }
 
 #taAnswerContainer.open { border: 2px solid rgba(74, 144, 226, 0.4); transform: scale(1.01); }
-#taAnswerContainer.open #taAnswerContent { max-height: 450px; padding: 20px; border-top: 1px solid rgba(0,0,0,0.05); }
+#taAnswerContainer.open #taAnswerContent { max-height: 38vh; padding: 20px; border-top: 1px solid rgba(0,0,0,0.05); }
 
 #toggleTAAnswer {
     width: 100%; padding: 18px; background-color: var(--secondary); color: white; border: none;
@@ -966,6 +1010,8 @@ body.dark-mode #walkDesc { color: #cbd5e1 !important; }
 
 #taAnswerContent {
     padding: 0 20px; max-height: 0px; overflow-y: auto; transition: all 0.3s ease;
+    -webkit-overflow-scrolling: touch; /* NEW */
+    overscroll-behavior: contain; /* NEW */
     color: var(--text-muted); font-size: 17px; white-space: pre-wrap; text-align: center; box-sizing: border-box;
 }
 
@@ -1140,7 +1186,7 @@ body.dark-mode #triviaPrompt { background: rgba(30, 41, 59, 0.9); border-color: 
    ========================================================================== */
 .info-btn {
     position: absolute;
-    top: 27px;
+    top: 29px;
     left: 10px; /* Sits exactly opposite of the right-aligned audio button */
     transform: translateY(-50%);
     height: 42px;
@@ -1163,13 +1209,6 @@ body.dark-mode #triviaPrompt { background: rgba(30, 41, 59, 0.9); border-color: 
 
 .info-btn:hover { background: rgba(255, 255, 255, 0.4); }
 .info-btn:active { transform: translateY(-50%) scale(0.85); }
-
-#infoModalContent {
-    overflow: hidden;
-    border-radius: 8px;
-    margin-top: 15px;
-    touch-action: none;
-}
 
 /* ==========================================================================
    SCRIPTURE KARAOKE STYLES
@@ -1321,4 +1360,62 @@ body.dark-mode .splash-text {
 }
 .walkthrough-active-pulse {
     animation: walkthroughPulse 1.5s infinite ease-in-out !important;
+}
+
+/* Prevent text highlighting and context menus during long-press */
+#audioBtnMain, #audioBtnReview, #audioBtnMistake, #audioBtnTA {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* ===================== CC SPINNER RADIO ===================== */
+.radio-ctrl-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+    padding: 10px;
+}
+.radio-ctrl-btn svg {
+    fill: currentColor;
+}
+.radio-ctrl-btn.active {
+    color: var(--primary);
+}
+
+/* Apple Music style range slider */
+#radioSeeker {
+    -webkit-appearance: none;
+    appearance: none; /* NEW: Standard property for cross-browser support */
+    background: rgba(0,0,0,0.1);
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+}
+.dark-mode #radioSeeker { background: rgba(255,255,255,0.2); }
+
+#radioSeeker::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none; /* NEW: Standard property */
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Breathing animation when playing */
+@keyframes radioPulse {
+    0% { transform: scale(1); box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+    50% { transform: scale(1.03); box-shadow: 0 25px 60px rgba(0,0,0,0.3); }
+    100% { transform: scale(1); box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+}
+.radio-playing-art {
+    animation: radioPulse 4s infinite ease-in-out;
 }

@@ -55,18 +55,25 @@
         <!-- Original Title -->
         <h1 style="font-size: 42px; font-weight: 800; margin: 0 0 80px 0; letter-spacing: 2px; color: var(--primary);">CC Spinner</h1>
         
-        <!-- Solid Coral Button -->
+<!-- Solid Coral Button -->
         <button class="splash-btn" onclick="dismissSplashScreen()" style="background: var(--primary); color: white; border: none; padding: 16px 45px; border-radius: 30px; font-size: 20px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255,111,97,0.3);">Tap to Start</button>
 
+        <!-- Quiet Current Streak -->
+        <div id="splashStreak" style="margin-top: 24px; display: flex; align-items: center; gap: 5px; font-size: 15px; font-weight: 800; color: var(--text-muted); opacity: 0.7;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 17px; height: 17px;">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+            </svg>
+            <span id="splashStreakText">1</span>
+        </div>
+
         <!-- Quiet Splash Cycle Selector -->
-        <div style="margin-top: 80px; opacity: 0.5; transition: opacity 0.2s ease;" ontouchstart="this.style.opacity='1'" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+        <div style="margin-top: 60px; opacity: 0.5; transition: opacity 0.2s ease;" ontouchstart="this.style.opacity='1'" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
             <select id="splashCyclePicker" onchange="changeCycle(this.value); document.getElementById('cyclePicker').value = this.value;" style="appearance: none; -webkit-appearance: none; background-color: transparent; color: var(--text-main); padding: 8px 30px 8px 16px; border-radius: 20px; font-weight: 700; font-size: 14px; border: 1.5px solid var(--text-muted); cursor: pointer; text-align: center; font-family: inherit; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px top 50%; background-size: 10px auto;">
                 <option value="1">Cycle 1</option>
                 <option value="2">Cycle 2</option>
                 <option value="3">Cycle 3</option>
             </select>
         </div>
-
     </div>
 </div>
 
@@ -80,7 +87,7 @@
     </div>
   </div>
 
-  <div id="prompt"></div>
+<div id="prompt" onclick="speakText(this.textContent)" style="cursor: pointer;"></div>
 
   <div id="answerContainer">
     <button id="toggleAnswer" onclick="toggleAnswer()">▼ Show Answer ▼</button>
@@ -137,8 +144,8 @@
             </div>
         </div>
 
-        <div id="reviewPrompt" class="prompt-card-style"></div> 
-        
+    <div id="reviewPrompt" class="prompt-card-style" onclick="speakText(this.textContent)" style="cursor: pointer;"></div>
+
         <div id="reviewAnswerContainer">
             <div class="answer-header-static">ANSWER</div>
             <button id="infoBtnReview" class="info-btn" onclick="openInfoModal(event, 'infoBtnReview')">i</button>
@@ -163,18 +170,27 @@
         <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 10px; flex-shrink: 0;">
             <button id="resetGridBtnTour" class="resetHeaderBtn" onclick="resetGrid()" style="padding: 10px 24px; font-size: 14px;">Reset Grid</button>
             
-            <div id="gridControlsRow" style="display: flex; gap: 15px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 5px; border-radius: 16px;">
+            <div id="gridControlsRow" style="display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; padding: 5px; border-radius: 16px; width: 100%;">
                 <select id="cyclePicker" onchange="changeCycle(this.value)">
                     <option value="1">Cycle 1</option>
                     <option value="2">Cycle 2</option>
                     <option value="3">Cycle 3</option>
                 </select>
                 
-                <div class="maxWeekControl">
-                    <span>Max Week:</span>
-                    <button id="decreaseWeek" class="maxWeekBtn">-</button>
-                    <span id="maxWeekDisplay">12</span>
-                    <button id="increaseWeek" class="maxWeekBtn">+</button>
+                <!-- Grouped the min/max pickers into their own dedicated row -->
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%;">
+                    <div class="weekRangeControl">
+                        <span>Min:</span>
+                        <button id="decreaseMinWeek" class="weekBtn">-</button>
+                        <span id="minWeekDisplay">1</span>
+                        <button id="increaseMinWeek" class="weekBtn">+</button>
+                    </div>
+                    <div class="weekRangeControl">
+                        <span>Max:</span>
+                        <button id="decreaseMaxWeek" class="weekBtn">-</button>
+                        <span id="maxWeekDisplay">12</span>
+                        <button id="increaseMaxWeek" class="weekBtn">+</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -194,6 +210,7 @@
             </div>
             <div style="color: var(--secondary);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></div>
         </button>
+
         <button class="setting-item" onclick="openTimeAttackMenu()">
             <div class="setting-text">
                 <h4>Time Attack</h4>
@@ -201,6 +218,7 @@
             </div>
             <div style="color: var(--secondary);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px;"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 14 15"></polyline><line x1="12" y1="2" x2="12" y2="4"></line></svg></div>
         </button>
+
         <button class="setting-item" onclick="openTriviaMenu()">
             <div class="setting-text">
                 <h4>Trivia Quiz</h4>
@@ -208,6 +226,16 @@
             </div>
             <div style="color: var(--secondary);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px;"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
         </button>
+
+
+        <button class="setting-item" onclick="openRadio()">
+            <div class="setting-text">
+                <h4>CC Spinner Radio</h4>
+                <p>Listen to a playlist of your songs</p>
+            </div>
+            <div style="color: var(--secondary);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px;"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg></div>
+        </button>
+
         <button class="setting-item" onclick="openScriptureMenu()">
             <div class="setting-text">
                 <h4 id="scriptureBtnTitle">Scripture Song</h4>
@@ -436,7 +464,7 @@
     </div>
 </div>
 
-<div id="settingsContainer" class="view-container">
+<div id="settingsContainer" class="view-container" style="overflow-y: auto; justify-content: flex-start; padding-bottom: 120px;">
     <h1 class="app-title" style="margin-top: 40px; margin-bottom: 20px;">Settings</h1>
     
     <div class="settings-menu">
@@ -479,6 +507,25 @@
             </div>
             <div class="toggle-switch" id="switch-dark"><div class="toggle-knob"></div></div>
         </button>
+
+        <div class="setting-item" style="cursor: default;">
+            <div class="setting-text">
+                <h4>Reader Voice</h4>
+                <p>Tap prompts to read aloud</p>
+            </div>
+            <select id="voicePicker" onchange="changeVoice(this.value)" style="max-width: 140px; flex-shrink: 0; padding: 8px 28px 8px 12px; border-radius: 12px; border: 2px solid rgba(74, 144, 226, 0.2); font-family: inherit; font-size: 14px; font-weight: 700; background-color: var(--card-bg); color: var(--secondary); cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%234a90e2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px top 50%; background-size: 10px auto; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                <option value="">Auto-Select</option>
+            </select>
+        </div>
+
+        <!-- INSTALL APP BUTTON (Hides automatically if already installed) -->
+        <div id="installSettingContainer" class="setting-item">
+            <div class="setting-text">
+                <h4>Install App</h4>
+                <p>Add CC Spinner to your Home Screen</p>
+            </div>
+            <button class="settings-action-btn" onclick="promptInstall()">Install</button>
+        </div>
 
         <button class="setting-item" onclick="showTutorial()">
             <div class="setting-text">
@@ -624,12 +671,12 @@
     </div>
 </div>
 
-<div id="infoModalOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 6000;">
-    <div style="background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); width: 90%; max-width: 500px; border-radius: 16px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); max-height: 80vh; overflow-y: auto; position: relative; text-align: center;">
-        <button onclick="closeInfoModal()" style="position: absolute; top: 15px; right: 15px; background: #f1f5f9; border: none; border-radius: 50%; width: 30px; height: 30px; font-weight: 800; cursor: pointer; color: #64748b;">X</button>
-        <h3 style="margin-top: 0; color: var(--primary);">Extra Info</h3>
-        <div id="infoModalContent"></div>
-    </div>
+<div id="infoModalOverlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; touch-action: none; overscroll-behavior: none;">
+    <!-- Glass-morphism X button pushed to the very top right corner (clearing the notch) -->
+    <button onclick="closeInfoModal()" style="position: absolute; top: max(20px, env(safe-area-inset-top)); right: 20px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; width: 40px; height: 40px; font-weight: 800; font-size: 18px; cursor: pointer; color: white; z-index: 6001; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;">X</button>
+    
+    <!-- A pure, un-scrollable boundary for the physics engine -->
+    <div id="infoModalContent" style="width: 100%; height: 100%; position: relative; overflow: hidden;"></div>
 </div>
 
 <div id="contactModalOverlay" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); z-index: 6000;">
@@ -650,6 +697,63 @@
         <textarea id="contactMessage" rows="5" placeholder="Type your message here..." style="width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 20px; border-radius: 12px; border: 2px solid rgba(74, 144, 226, 0.2); font-family: inherit; font-size: 16px; resize: none; box-sizing: border-box; background: white; color: var(--text-main);"></textarea>
 
         <button onclick="submitContactForm()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255,111,97,0.3);">Send Email</button>
+    </div>
+</div>
+
+<!-- CC SPINNER RADIO UI -->
+<div id="radioContainer" class="view-container" style="align-items: center; padding-top: 40px;">
+    
+    <!-- Top Nav -->
+    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 0 20px;">
+        <button onclick="closeRadio()" style="background: transparent; border: none; color: var(--text-muted); font-weight: 800; font-size: 16px; cursor: pointer;">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+        <span style="font-weight: 800; color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Now Playing</span>
+        <div style="width: 24px;"></div> <!-- Spacer for center alignment -->
+    </div>
+
+    <!-- Album Art Placeholder -->
+    <div id="radioArt" style="width: 250px; height: 250px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; margin-bottom: 40px; transition: transform 0.3s ease;">
+        <svg viewBox="0 0 24 24" width="100" height="100" fill="white" opacity="0.8"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path></svg>
+    </div>
+
+    <!-- Track Info -->
+    <div style="text-align: center; margin-bottom: 30px; width: 80%;">
+        <h2 id="radioTrackTitle" style="font-size: 28px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Loading...</h2>
+        <p id="radioTrackSub" style="font-size: 18px; color: var(--primary); font-weight: 700;">Preparing Playlist</p>
+    </div>
+
+    <!-- Scrubber / Progress Bar -->
+    <div style="width: 85%; max-width: 400px; margin-bottom: 40px;">
+        <input type="range" id="radioSeeker" value="0" max="100" style="width: 100%; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); font-weight: 700;">
+            <span id="radioTimeCurrent">0:00</span>
+            <span id="radioTimeTotal">-:--</span>
+        </div>
+    </div>
+
+    <!-- Playback Controls -->
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 85%; max-width: 350px;">
+        <!-- Shuffle -->
+        <button id="radioShuffleBtn" onclick="toggleRadioShuffle()" class="radio-ctrl-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"></path></svg>
+        </button>
+        <!-- Prev -->
+        <button onclick="prevRadioTrack()" class="radio-ctrl-btn" style="transform: scale(1.2);">
+            <svg viewBox="0 0 24 24" width="32" height="32"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
+        </button>
+        <!-- Play/Pause -->
+        <button id="radioPlayPauseBtn" onclick="toggleRadioPlay()" class="radio-ctrl-btn" style="transform: scale(1.8); color: var(--primary);">
+            <svg viewBox="0 0 24 24" width="40" height="40"><path id="radioPlayIcon" d="M8 5v14l11-7z"></path></svg>
+        </button>
+        <!-- Next -->
+        <button onclick="nextRadioTrack()" class="radio-ctrl-btn" style="transform: scale(1.2);">
+            <svg viewBox="0 0 24 24" width="32" height="32"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
+        </button>
+        <!-- Repeat -->
+        <button id="radioRepeatBtn" onclick="toggleRadioRepeat()" class="radio-ctrl-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"></path></svg>
+        </button>
     </div>
 </div>
 

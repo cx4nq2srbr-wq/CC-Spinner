@@ -3,9 +3,11 @@
    ========================================================================== */
 let currentMode = 'spinner'; 
 
+
 function switchMode(mode) {
-    stopVoiceover();
-const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer', 'mapMenuContainer', 'mapGameContainer', 'triviaMenuContainer', 'triviaGameContainer', 'scriptureContainer'];
+    pauseRadio(); // NEW: Stops music if they navigate away!
+    stopVoiceover(); // Stop anything playing in previous tab
+const challengeIds = ['challengeContainer', 'taMenuContainer', 'taGameContainer', 'mistakeGameContainer', 'mapMenuContainer', 'mapGameContainer', 'triviaMenuContainer', 'triviaGameContainer', 'scriptureContainer', 'radioContainer'];
     // THE FIX: Double-tap logic to return to the Focus menu
     if (mode === 'challenge' && currentMode === 'challenge') {
         challengeIds.forEach(id => {
@@ -125,14 +127,15 @@ let mistakesBank = localStorage.getItem(getPrefix() + 'ccMistakesBank') ?
                 JSON.parse(localStorage.getItem(getPrefix() + 'ccMistakesBank')) : [];
 
 let savedMaxWeek = localStorage.getItem(getPrefix() + 'ccMaxWeek');
-
+let savedMinWeek = localStorage.getItem(getPrefix() + 'ccMinWeek');
 // Global User Settings
 let userSettings = Object.assign({
     muted: false,
     haptics: true,
     turbo: false,
     autoReveal: false,
-    darkMode: false
+    darkMode: false,
+    selectedVoice: "" // NEW: Stores the chosen voice name
 }, JSON.parse(localStorage.getItem('appSettings')) || {});
 
 function anyLessonsRemaining() {
@@ -189,7 +192,9 @@ function changeCycle(cycleNum) {
 
     // Update UI
     const cycleMax = localStorage.getItem(getPrefix() + 'ccMaxWeek');
+    const cycleMin = localStorage.getItem(getPrefix() + 'ccMinWeek');
     setMaxWeek(cycleMax ? parseInt(cycleMax) : 24);
+    setMinWeek(cycleMin ? parseInt(cycleMin) : 1);
     buildGrid();
     if (currentMode === 'review') {
         updateReviewDisplay();
@@ -216,20 +221,26 @@ window.onload = function() {
 
   const prefix = getPrefix();
   const savedMax = localStorage.getItem(prefix + 'ccMaxWeek');
-  if (savedMax) setMaxWeek(parseInt(savedMax, 10));
-  else setMaxWeek(24);
+  const savedMin = localStorage.getItem(prefix + 'ccMinWeek');
+  if (savedMax) setMaxWeek(parseInt(savedMax, 10)); else setMaxWeek(24);
+  if (savedMin) setMinWeek(parseInt(savedMin, 10)); else setMinWeek(1);
 
   document.getElementById('toggleAnswer').disabled = true;
   buildGrid();
   
+  setupAudioButtons(); // NEW: Initializes the long-press logic!
+
   // Initial Vibration Feedback
   if (userSettings.haptics && navigator.vibrate) navigator.vibrate(40);
+
+  checkStandaloneMode();
 
   // Sync Version Tag
   fetch('manifest.json') 
     .then(r => r.ok ? r.json() : Promise.reject())
     .then(m => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = m.version; })
     .catch(() => { if(document.getElementById('app-version')) document.getElementById('app-version').innerText = "not available"; });
+    updateDailyStreak();
     updateFlagUI();
     updateScriptureButtonUI();
     // Reveal the splash screen ONLY after the layout and fonts have completely settled
@@ -243,6 +254,7 @@ function saveToDevice() {
   const prefix = getPrefix();
   localStorage.setItem(prefix + 'ccSpinnerProgress', JSON.stringify(gridState));
   localStorage.setItem(prefix + 'ccMaxWeek', String(getMaxWeek()));
+  localStorage.setItem(prefix + 'ccMinWeek', String(getMinWeek()));
   localStorage.setItem(prefix + 'ccAllowedWeeks', JSON.stringify(allowedWeeks));
   localStorage.setItem(prefix + 'ccBlockedWeeks', JSON.stringify(blockedWeeks));
   localStorage.setItem(prefix + 'ccBlockedSubjects', JSON.stringify(blockedSubjects));
@@ -266,9 +278,11 @@ function spinBoth() {
   if (isSpinning) return;
   if (userSettings.haptics && navigator.vibrate) navigator.vibrate(15); 
 
+  const minWeekLimit = getMinWeek();
   const maxWeekLimit = getMaxWeek();
+  
   const availableSubjects = subjects.filter(s =>
-    !blockedSubjects.includes(s) && weeks.some(w => (w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w])
+    !blockedSubjects.includes(s) && weeks.some(w => (w >= minWeekLimit && w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w])
   );
 
   if (availableSubjects.length === 0) {
@@ -296,9 +310,8 @@ function spinBoth() {
   promptDiv.textContent = "";
 
   const subject = availableSubjects[Math.floor(Math.random() * availableSubjects.length)];
-  const availableWeeks = weeks.filter(w => ((w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[subject][w]);
+  const availableWeeks = weeks.filter(w => ((w >= minWeekLimit && w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[subject][w]);
   const week = availableWeeks[Math.floor(Math.random() * availableWeeks.length)];
-
   const subIdx = subjects.indexOf(subject);
   const weekIdx = weeks.indexOf(week);
 
@@ -357,7 +370,7 @@ function spinBoth() {
       buildGrid(); 
       
       const remaining = subjects.some(s =>
-        !blockedSubjects.includes(s) && weeks.some(w => ((w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[s][w])
+        !blockedSubjects.includes(s) && weeks.some(w => ((w >= minWeekLimit && w <= maxWeekLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w)) && gridState[s][w])
       );
       if (!remaining) {
         setSpinLabel('Done');
@@ -603,7 +616,8 @@ function updateBadgeCounts() {
 function playSound(freq, type, duration, vol) {
   if (userSettings.muted) return;
   
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  // Aggressively wake up the audio context if the device put it to sleep
+  if (audioCtx.state !== 'running') audioCtx.resume();
   
   const osc = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();
@@ -670,12 +684,155 @@ function getSpinLabel() {
   return (spinBtn.textContent || '').trim();
 }
 
+let availableVoices = [];
+
+// NEW: Dynamically build the dropdown list when the device loads its voices
+function populateVoiceList() {
+    if (!('speechSynthesis' in window)) return;
+    
+    availableVoices = window.speechSynthesis.getVoices();
+    const voicePicker = document.getElementById('voicePicker');
+    if (!voicePicker) return;
+    
+    // Keep the default option
+    voicePicker.innerHTML = '<option value="">Auto-Select Best Voice</option>';
+    
+    // 1. Filter for English voices
+    const englishVoices = availableVoices.filter(v => v.lang.startsWith('en'));
+    
+    // 2. Define our "Top Shelf" natural voices
+    const premiumNames = ['Samantha', 'Daniel', 'Moira', 'Karen', 'Siri', 'Alex', 'Premium', 'Enhanced', 'Google US English'];
+    
+    const seenNames = new Set();
+    const uniqueVoices = [];
+    
+    // 3. Clean names and remove duplicates!
+    englishVoices.forEach(voice => {
+        // Strip out Apple and Google's messy regional tags
+        let displayName = voice.name.replace(/ \(English \(United States\)\)/g, '')
+                                    .replace(/ \(en-US\)/g, '')
+                                    .replace(/ \(en-GB\)/g, '')
+                                    .replace(/ \(en-AU\)/g, '')
+                                    .replace(/ \(en-IE\)/g, '')
+                                    .trim();
+        
+        // If we haven't added this name to the list yet, keep it!
+        if (!seenNames.has(displayName)) {
+            seenNames.add(displayName);
+            uniqueVoices.push({
+                originalName: voice.name,
+                displayName: displayName
+            });
+        }
+    });
+    
+    // 4. Sort the list: Premium voices at the top, everything else alphabetical
+    uniqueVoices.sort((a, b) => {
+        const aIsPremium = premiumNames.some(p => a.displayName.includes(p));
+        const bIsPremium = premiumNames.some(p => b.displayName.includes(p));
+        
+        if (aIsPremium && !bIsPremium) return -1; // 'a' moves up
+        if (!aIsPremium && bIsPremium) return 1;  // 'b' moves up
+        
+        // If both are premium (or neither are), sort them A-Z
+        return a.displayName.localeCompare(b.displayName);
+    });
+    
+    // 5. Inject them into the HTML dropdown
+    uniqueVoices.forEach(v => {
+        const option = document.createElement('option');
+        option.textContent = v.displayName;
+        option.value = v.originalName;
+        
+        if (v.originalName === userSettings.selectedVoice) {
+            option.selected = true;
+        }
+        
+        voicePicker.appendChild(option);
+    });
+}
+
+if ('speechSynthesis' in window) {
+    populateVoiceList();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+}
+
+// NEW: Save the voice and test it!
+function changeVoice(voiceName) {
+    userSettings.selectedVoice = voiceName;
+    saveSettings();
+    
+    if (voiceName) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance("Testing new voice.");
+        utterance.voice = availableVoices.find(v => v.name === voiceName);
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+function speakText(text) {
+    if (!text || !('speechSynthesis' in window)) return;
+    
+    if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
+    
+    // THE FIX: Wake up the OS speech engine if it booted in a sleeping/paused state!
+    window.speechSynthesis.resume();
+    window.speechSynthesis.cancel(); 
+    stopVoiceover(); 
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9; 
+    
+    if (availableVoices.length === 0) {
+        availableVoices = window.speechSynthesis.getVoices();
+    }
+
+    if (availableVoices.length > 0) {
+        let bestVoice = null;
+        
+        // 1. Check if user manually selected a voice
+        if (userSettings.selectedVoice) {
+            bestVoice = availableVoices.find(v => v.name === userSettings.selectedVoice);
+        }
+        
+        // 2. If no manual choice, try system default
+        if (!bestVoice) {
+            bestVoice = availableVoices.find(v => v.default && v.lang.startsWith('en'));
+        }
+        
+        // 3. Auto-hunt for high quality
+        if (!bestVoice) {
+            bestVoice = availableVoices.find(v => 
+                v.name.includes('Siri') ||              
+                v.name.includes('Premium') ||           
+                v.name.includes('Enhanced') ||          
+                v.name.includes('Google US English') || 
+                v.name === 'Alex'                       
+            );
+        }
+        
+        // 4. Absolute fallback
+        if (!bestVoice) {
+            bestVoice = availableVoices.find(v => v.lang.startsWith('en-US') || v.lang.startsWith('en'));
+        }
+        
+        if (bestVoice) {
+            utterance.voice = bestVoice;
+        }
+    }
+    
+    window.speechSynthesis.speak(utterance);
+}
+
 /* ==========================================================================
    5. GRID & LESSON MANAGEMENT
    ========================================================================== */
 
 function buildGrid(){
   saveToDevice();
+  const minWeek = getMinWeek();
   const maxWeek = getMaxWeek();
   const container = document.getElementById('gridContent');
   const containerWidth = container ? container.clientWidth : window.innerWidth;
@@ -705,10 +862,10 @@ function buildGrid(){
     subjects.forEach(s => {
       let cls = "";
       
-      // THE FIX: If the subject is in the blocked bank, turn the cell grey!
-      if (isBlocked || blockedSubjects.includes(s) || !gridState[s][w] || (w > maxWeek && !isAllowed)) {
+      // THE FIX: Grays out cells if they are below the Min or above the Max!
+      if (isBlocked || blockedSubjects.includes(s) || !gridState[s][w] || ((w < minWeek || w > maxWeek) && !isAllowed)) {
           cls = "completed";
-      } else if (isAllowed && w > maxWeek) {
+      } else if (isAllowed && (w < minWeek || w > maxWeek)) {
           cls = "override";
       }
       
@@ -786,15 +943,27 @@ function toggleHaptics() {
    7. WEEK SELECTION & RESET DIALOGS
    ========================================================================== */
 
+function getMinWeek() {
+  const el = document.getElementById("minWeekDisplay");
+  return Math.max(1, Math.min(24, parseInt(el.textContent, 10) || 1));
+}
+function setMinWeek(n) {
+  // Min week can never go higher than the current Max week
+  document.getElementById("minWeekDisplay").textContent = String(Math.max(1, Math.min(getMaxWeek(), Number(n) || 1)));
+}
+function increaseMinWeek() { setMinWeek(getMinWeek() + 1); buildGrid(); }
+function decreaseMinWeek() { setMinWeek(getMinWeek() - 1); buildGrid(); }
+
 function getMaxWeek() {
   const el = document.getElementById("maxWeekDisplay");
   return Math.max(1, Math.min(24, parseInt(el.textContent, 10) || 24));
 }
 function setMaxWeek(n) {
-  document.getElementById("maxWeekDisplay").textContent = String(Math.max(1, Math.min(24, Number(n) || 1)));
+  // Max week can never go lower than the current Min week
+  document.getElementById("maxWeekDisplay").textContent = String(Math.max(getMinWeek(), Math.min(24, Number(n) || 1)));
 }
-function increaseWeek() { setMaxWeek(getMaxWeek() + 1); buildGrid(); }
-function decreaseWeek() { setMaxWeek(getMaxWeek() - 1); buildGrid(); }
+function increaseMaxWeek() { setMaxWeek(getMaxWeek() + 1); buildGrid(); }
+function decreaseMaxWeek() { setMaxWeek(getMaxWeek() - 1); buildGrid(); }
 
 function showResetConfirm() { document.getElementById('resetConfirmOverlay').style.display = 'flex'; }
 function hideResetConfirm() { document.getElementById('resetConfirmOverlay').style.display = 'none'; }
@@ -1184,8 +1353,11 @@ function bindHoldButton(id, actionFn){
   el.addEventListener('mousedown', start); el.addEventListener('mouseup', stop); el.addEventListener('mouseleave', stop);
   el.addEventListener('touchstart', start, {passive:false}); el.addEventListener('touchend', stop);
 }
-bindHoldButton('increaseWeek', increaseWeek);
-bindHoldButton('decreaseWeek', decreaseWeek);
+
+bindHoldButton('increaseMaxWeek', increaseMaxWeek);
+bindHoldButton('decreaseMaxWeek', decreaseMaxWeek);
+bindHoldButton('increaseMinWeek', increaseMinWeek); // NEW
+bindHoldButton('decreaseMinWeek', decreaseMinWeek); // NEW
 
 // --- PWA Service Worker ---
 if ('serviceWorker' in navigator) {
@@ -1408,11 +1580,11 @@ function resumeTimeAttack() {
 }
 
     taAvailable = [];
-    const maxLimit = getMaxWeek();
+    const minLimit = getMinWeek(); const maxLimit = getMaxWeek();
     subjects.forEach(s => {
         if (blockedSubjects.includes(s)) return;
         weeks.forEach(w => {
-            if ((w <= maxLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w]) {
+            if ((w >= minLimit && w <= maxLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w]) {
                 taAvailable.push({ subject: s, week: w });
             }
         });
@@ -1614,66 +1786,88 @@ function prepVoiceover(subject, week, btnId) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
     
-    // Reset state
     btn.style.display = 'none';
+    btn.classList.remove('has-full'); // Reset shape
     setAudioIcon(btnId, false);
     
-    // THE FIX: Added subfolders for Cycle and Subject (e.g., audio/c1/math/c1-math-w1.m4a)
     const cleanSubject = subject.toLowerCase().replace(/[^a-z0-9]/g, '');
     const url = `audio/c${currentCycle}/${cleanSubject}/c${currentCycle}-${cleanSubject}-w${week}.m4a`;
+    const fullUrl = `audio/c${currentCycle}/${cleanSubject}/c${currentCycle}-${cleanSubject}-w${week}-full.m4a`;
 
-    // "Ping" the server to see if the file exists without downloading it
     fetch(url, { method: 'HEAD' })
         .then(res => {
             if (res.ok) {
                 btn.dataset.url = url;
-                btn.style.display = 'flex'; // It exists! Show the button.
+                btn.style.display = 'flex'; 
                 setAudioIcon(btnId, false);
+                
+                // NEW: Background check for the full song!
+                fetch(fullUrl, { method: 'HEAD' })
+                    .then(resFull => {
+                        if (resFull.ok) {
+                            btn.dataset.fullUrl = fullUrl;
+                            btn.classList.add('has-full'); // Triggers the shape shift!
+                        }
+                    }).catch(e => { /* Ignore */ });
             }
         })
-        .catch(e => { /* File missing, keep button hidden */ });
+        .catch(e => { /* File missing */ });
 }
 
-function toggleVoiceover(e, btnId) {
-    if (e) e.stopPropagation(); // Prevents the Answer card from toggling open/closed!
+// NEW: Unified function handles both normal taps and long presses
+function playVoiceover(btnId, isFull) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
     
-    const targetUrl = btn.dataset.url;
+    const targetUrl = isFull ? btn.dataset.fullUrl : btn.dataset.url;
     
-    // If clicking the currently playing button, pause it
     if (activeVoiceBtn === btnId && !voiceAudio.paused) {
         voiceAudio.pause();
         setAudioIcon(btnId, false);
         return;
     }
     
-    // If playing a new file, load it
     if (currentVoiceUrl !== targetUrl) {
         voiceAudio.src = targetUrl;
         currentVoiceUrl = targetUrl;
     }
     
-    // Reset old button icon if switching to a new card
     if (activeVoiceBtn && activeVoiceBtn !== btnId) {
         setAudioIcon(activeVoiceBtn, false);
     }
     
-    voiceAudio.play().catch(err => console.error("Audio play failed:", err));
+    voiceAudio.play().catch(err => {
+        console.error("Audio play failed:", err);
+        if (isFull) {
+            alert("No extended song found for this week.");
+            setAudioIcon(btnId, false);
+            activeVoiceBtn = null;
+        }
+    });
+    
     activeVoiceBtn = btnId;
-    setAudioIcon(btnId, true);
+    setAudioIcon(btnId, true, isFull);
 }
 
-function setAudioIcon(btnId, isPlaying) {
+function setAudioIcon(btnId, isPlaying, isFull = false) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
+    
+    // Clean up previous states
+    btn.classList.remove('playing', 'playing-regular', 'playing-full');
+
     if (isPlaying) {
-        // Add the playing class (turns the circle red) and show Pause Icon
         btn.classList.add('playing');
+        
+        // Add specific classes to trigger the shape-shifting CSS
+        if (isFull) {
+            btn.classList.add('playing-full');
+        } else {
+            btn.classList.add('playing-regular');
+        }
+        
         btn.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
     } else {
-        // Remove the playing class and show Play Icon
-        btn.classList.remove('playing');
         btn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
     }
 }
@@ -1683,6 +1877,99 @@ function stopVoiceover() {
         voiceAudio.pause();
         if (activeVoiceBtn) setAudioIcon(activeVoiceBtn, false);
     }
+    
+    if ('speechSynthesis' in window && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) {
+        window.speechSynthesis.cancel();
+        
+        if (typeof audioCtx !== 'undefined') {
+            if (audioCtx.state !== 'running') {
+                audioCtx.resume();
+            } else {
+                audioCtx.suspend().then(() => audioCtx.resume());
+            }
+        }
+    }
+}
+
+function setupAudioButtons() {
+    const audioBtns = ['audioBtnMain', 'audioBtnReview', 'audioBtnMistake', 'audioBtnTA'];
+    
+    audioBtns.forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        
+        btn.removeAttribute('onclick');
+
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+        let hasMoved = false;
+
+        const start = (e) => {
+            e.stopPropagation();
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startY = clientY;
+            currentY = clientY;
+            isDragging = true;
+            hasMoved = false;
+            btn.style.transition = 'none'; // Disable transition for instant finger tracking
+        };
+
+        const move = (e) => {
+            if (!isDragging) return;
+            currentY = e.touches ? e.touches[0].clientY : e.clientY;
+            let deltaY = currentY - startY;
+
+            // Only allow dragging downward IF it has a full song attached
+            if (btn.classList.contains('has-full') && deltaY > 0) {
+                e.preventDefault(); // Stop the screen from scrolling down!
+                
+                // Add physical resistance so it feels like pulling a rubber band
+                let pullDistance = Math.min(deltaY * 0.4, 30);
+                btn.style.transform = `translateY(calc(-50% + ${pullDistance}px)) scale(0.95)`;
+                hasMoved = true;
+            }
+        };
+
+        const end = (e) => {
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault(); 
+            isDragging = false;
+            
+            // Snap back to normal centering instantly
+            btn.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            btn.style.transform = 'translateY(-50%) scale(1)';
+
+            let deltaY = currentY - startY;
+
+            // If they pulled the button down more than 15 pixels, play the Full Song!
+            if (btn.classList.contains('has-full') && deltaY > 15 && hasMoved) {
+                if (userSettings.haptics && navigator.vibrate) navigator.vibrate([20, 30, 20]);
+                playVoiceover(id, true);
+            } else {
+                // Otherwise, it was just a normal tap!
+                playVoiceover(id, false);
+            }
+        };
+
+        const cancel = () => {
+            isDragging = false;
+            btn.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            btn.style.transform = 'translateY(-50%) scale(1)';
+        };
+
+        // Bind touch events
+        btn.addEventListener('touchstart', start, { passive: false });
+        btn.addEventListener('touchmove', move, { passive: false });
+        btn.addEventListener('touchend', end, { passive: false });
+        btn.addEventListener('touchcancel', cancel);
+        
+        // Bind mouse events for testing on desktop
+        btn.addEventListener('mousedown', start);
+        btn.addEventListener('mousemove', move);
+        btn.addEventListener('mouseup', end);
+        btn.addEventListener('mouseleave', cancel);
+    });
 }
 
 /* ==========================================================================
@@ -1726,28 +2013,57 @@ function openInfoModal(e, btnId) {
     if (!btn || !btn.dataset.url) return;
     
     const contentDiv = document.getElementById('infoModalContent');
-    contentDiv.innerHTML = ""; // Clear old content
+    contentDiv.innerHTML = ""; 
     
-    // Create the image element safely
     const img = document.createElement('img');
     img.id = 'infoImage';
     img.src = btn.dataset.url;
-    img.style.width = '100%';
-    img.style.borderRadius = '8px';
-    img.style.touchAction = 'none'; // Critical to stop the browser from fighting the zoom!
+    
+    // Anti-hijack CSS to stop iOS and Android from stealing the touch events!
+    img.draggable = false; 
+    img.style.userSelect = 'none';
+    img.style.webkitUserSelect = 'none';
+    img.style.webkitTouchCallout = 'none';
+    
+    // Absolute positioning guarantees the CSS layout engine doesn't fight the zoom math!
+    img.style.position = 'absolute';
+    img.style.top = '0';
+    img.style.left = '0';
+    img.style.transformOrigin = '0 0';
+    img.style.touchAction = 'none'; 
     
     contentDiv.appendChild(img);
-    document.getElementById('infoModalOverlay').style.display = 'flex';
+    // Display as a standard block, not a flexbox
+    document.getElementById('infoModalOverlay').style.display = 'block'; 
 
-    // Wait for the image to load, then attach the physics engine!
     img.onload = () => {
-        if (infoPanZoom) infoPanZoom.dispose(); // Clean up just in case
+        const wrapperWidth = contentDiv.clientWidth;
+        const wrapperHeight = contentDiv.clientHeight;
+        const imgRatio = img.naturalWidth / img.naturalHeight;
+        const wrapperRatio = wrapperWidth / wrapperHeight;
+
+        let targetWidth, targetHeight;
+        if (imgRatio > wrapperRatio) {
+            targetWidth = wrapperWidth;
+            targetHeight = wrapperWidth / imgRatio;
+        } else {
+            targetHeight = wrapperHeight;
+            targetWidth = wrapperHeight * imgRatio;
+        }
+
+        img.style.width = targetWidth + 'px';
+        img.style.height = targetHeight + 'px';
+
+        if (infoPanZoom) infoPanZoom.dispose(); 
         infoPanZoom = panzoom(img, {
-            maxZoom: 5,
+            maxZoom: 6,
             minZoom: 1,
             bounds: true,
-            boundsPadding: 0.1
+            boundsPadding: 0.05
         });
+        
+        // Instantly center the map on the screen
+        infoPanZoom.moveTo((wrapperWidth - targetWidth) / 2, (wrapperHeight - targetHeight) / 2);
     };
 }
 
@@ -1910,6 +2226,11 @@ function startMapGame(selectedMapSvg) {
                 touchStartY = e.touches[0].clientY;
             }
         }, { passive: true });
+        // NEW: Track mouse clicks for testing on desktop!
+        wrapper.addEventListener('mousedown', (e) => {
+            touchStartX = e.clientX;
+            touchStartY = e.clientY;
+        }, { passive: true });
         isMapTouchTracked = true;
     }
 
@@ -2005,7 +2326,7 @@ function initMapHitboxes() {
         const rawName = weekMatch[2];
 
         // If the week is higher than our max week, disable clicks and abort!
-        if (weekNum > currentMaxWeek) {
+        if (weekNum < currentMinWeek || weekNum > currentMaxWeek) {
             el.style.pointerEvents = 'none'; // Ensures it doesn't block clicks to the base map
             return;
         }
@@ -2017,20 +2338,30 @@ function initMapHitboxes() {
         
         // Add the distance-checking tap listener
         const handleTap = (e) => {
+            let endX, endY;
             if (e.type === 'touchend' && e.changedTouches.length > 0) {
-                const endX = e.changedTouches[0].clientX;
-                const endY = e.changedTouches[0].clientY;
+                endX = e.changedTouches[0].clientX;
+                endY = e.changedTouches[0].clientY;
+            } else if (e.type === 'mouseup') {
+                endX = e.clientX;
+                endY = e.clientY;
+            }
+
+            // If the finger/mouse moved more than 10 pixels, they were scrolling! Ignore the tap.
+            if (endX !== undefined && endY !== undefined) {
                 if (Math.hypot(endX - touchStartX, endY - touchStartY) > 10) return; 
             }
 
-            if (isMapDragging) return; 
-            e.stopPropagation();
+            if (isMapProcessing) return; 
+            
+            e.stopPropagation(); // Only block events AFTER they lift their finger
             if (e.cancelable) e.preventDefault(); 
             
             handleMapClick(rawId, el);
         };
 
-        el.addEventListener('mousedown', handleTap);
+        // THE FIX: Removed mousedown entirely so the panzoom physics engine can catch the drag!
+        el.addEventListener('mouseup', handleTap);
         el.addEventListener('touchend', handleTap, { passive: false });
     });
 }
@@ -2169,17 +2500,14 @@ function openTriviaMenu() {
 
     // 1. Calculate all available questions
     fullTriviaDeck = [];
-    const maxLimit = getMaxWeek();
+    const minLimit = getMinWeek(); const maxLimit = getMaxWeek();
 
     if (typeof customTriviaBank !== 'undefined') {
         customTriviaBank.forEach(trivia => {
             if (trivia.cycle === currentCycle) {
                 const s = trivia.subject;
                 const w = trivia.week;
-                if (!blockedSubjects.includes(s) &&
-                    (w <= maxLimit || allowedWeeks.includes(w)) &&
-                    !blockedWeeks.includes(w) &&
-                    gridState[s] && gridState[s][w]) {
+                if ((w >= minLimit && w <= maxLimit || allowedWeeks.includes(w)) && !blockedWeeks.includes(w) && gridState[s][w]) {
                     fullTriviaDeck.push(trivia);
                 }
             }
@@ -2372,7 +2700,7 @@ function closeTriviaResults() {
 }
 
 /* ==========================================================================
-   CONTACT FORM ENGINE
+   16. CONTACT FORM ENGINE
    ========================================================================== */
 function openContactModal() {
     if (userSettings.haptics && navigator.vibrate) navigator.vibrate(10);
@@ -2411,7 +2739,7 @@ function submitContactForm() {
 }
 
 /* ==========================================================================
-   SPLASH SCREEN ENGINE
+   17. SPLASH SCREEN ENGINE
    ========================================================================== */
 function dismissSplashScreen() {
     const splash = document.getElementById('splashScreen');
@@ -2435,8 +2763,36 @@ function dismissSplashScreen() {
     }, 400); 
 }
 
+function updateDailyStreak() {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+    const lastVisit = localStorage.getItem('ccLastVisitDate');
+    let streak = parseInt(localStorage.getItem('ccCurrentStreak') || '0', 10);
+
+    if (lastVisit === todayStr) {
+        if (streak < 1) streak = 1;
+    } else if (lastVisit === yesterdayStr) {
+        streak += 1;
+    } else {
+        streak = 1;
+    }
+
+    localStorage.setItem('ccLastVisitDate', todayStr);
+    localStorage.setItem('ccCurrentStreak', String(streak));
+
+    const streakText = document.getElementById('splashStreakText');
+    if (streakText) {
+        streakText.textContent = String(streak);
+    }
+}
+
 /* ==========================================================================
-   INTERACTIVE WALKTHROUGH ENGINE
+   18. INTERACTIVE WALKTHROUGH ENGINE
    ========================================================================== */
 const walkSteps = [
     { target: null, mode: 'spinner', title: "Welcome!", desc: "Let's take a quick interactive tour to show you how CC Spinner works." },
@@ -2619,4 +2975,285 @@ function skipWalkthrough() {
     playVictoryChime();
     startConfetti();
     setTimeout(stopConfetti, 2500);
+}
+
+/* ==========================================================================
+   19. PWA INSTALLATION ENGINE
+   ========================================================================== */
+let deferredPrompt;
+
+// 1. Listen for the native Android/Chrome install prompt and catch it
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
+// 2. Hide the button if the app is already installed on the home screen!
+function checkStandaloneMode() {
+    const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone;
+    const installBlock = document.getElementById('installSettingContainer');
+    
+    if (isStandalone && installBlock) {
+        installBlock.style.display = 'none';
+    }
+}
+
+// 3. Handle the Install button click
+function promptInstall() {
+    if (deferredPrompt) {
+        // Android/Chrome: Trigger the native 1-click install popup
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                document.getElementById('installSettingContainer').style.display = 'none';
+            }
+            deferredPrompt = null; // Clean up
+        });
+    } else {
+        // iOS/Safari: Apple blocks automatic prompts, so we walk them through it
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+            alert("To install on iPhone/iPad:\n\n1. Tap the Share button at the bottom of Safari (the square with an up arrow).\n2. Scroll down and tap 'Add to Home Screen'.");
+        } else {
+            alert("To install this app, open your browser menu and select 'Add to Home Screen' or 'Install App'.");
+        }
+    }
+}
+
+// 4. If they install it successfully, hide the button instantly
+window.addEventListener('appinstalled', () => {
+    document.getElementById('installSettingContainer').style.display = 'none';
+    deferredPrompt = null;
+});
+
+/* ==========================================================================
+   15. CC SPINNER RADIO ENGINE
+   ========================================================================== */
+const radioAudio = new Audio();
+let radioPlaylist = [];
+let radioOriginalList = [];
+let currentRadioIndex = 0;
+let isRadioPlaying = false;
+let radioRepeatMode = 0; // 0: Off, 1: All, 2: One
+let radioShuffleOn = false;
+let radioAutoSkipCount = 0; // Prevents infinite loops if files are missing
+
+// Audio Event Listeners
+radioAudio.addEventListener('timeupdate', updateRadioProgress);
+radioAudio.addEventListener('ended', handleRadioEnded);
+radioAudio.addEventListener('error', () => {
+    // If the file doesn't exist, instantly skip to the next one!
+    radioAutoSkipCount++;
+    if (radioAutoSkipCount >= radioPlaylist.length) {
+        pauseRadio(); // Everything failed
+        document.getElementById('radioTrackTitle').textContent = "No audio found!";
+    } else {
+        nextRadioTrack(true); // force skip
+    }
+});
+
+function openRadio() {
+    stopVoiceover(); // Silence the spinner/robot
+    document.getElementById('challengeContainer').classList.remove('active');
+    document.getElementById('radioContainer').classList.add('active');
+    activeChallengePage = 'radioContainer'; // Remembers you are here!
+    buildRadioPlaylist();
+}
+
+function closeRadio() {
+    pauseRadio();
+    document.getElementById('radioContainer').classList.remove('active');
+    document.getElementById('challengeContainer').classList.add('active');
+    activeChallengePage = 'challengeContainer';
+}
+
+function buildRadioPlaylist() {
+    radioPlaylist = [];
+    
+    // THE FIX: Define BOTH the Min and Max weeks by reading the UI!
+    const currentMinWeek = typeof getMinWeek === 'function' ? getMinWeek() : 1;
+    const currentMaxWeek = getMaxWeek();
+    
+    // Generate the master list (Grouped by Subject, from Min Week to Max Week)
+    subjects.forEach(subject => {
+        const cleanSub = subject.toLowerCase().replace(/[^a-z0-9]/g, '');
+        for (let w = currentMinWeek; w <= currentMaxWeek; w++) {
+            radioPlaylist.push({
+                subject: subject,
+                week: w,
+                url: `audio/c${currentCycle}/${cleanSub}/c${currentCycle}-${cleanSub}-w${w}.m4a`
+            });
+        }
+    });
+
+    radioOriginalList = [...radioPlaylist];
+    currentRadioIndex = 0;
+    radioAutoSkipCount = 0;
+    
+    if (radioShuffleOn) shuffleRadioList();
+    
+    loadRadioTrack(currentRadioIndex);
+}
+
+function loadRadioTrack(index) {
+    if (radioPlaylist.length === 0) return;
+    
+    const track = radioPlaylist[index];
+    radioAudio.src = track.url;
+    radioAudio.load();
+    
+    document.getElementById('radioTrackTitle').textContent = `${track.subject} - Week ${track.week}`;
+    document.getElementById('radioTrackSub').textContent = `Cycle ${currentCycle}`;
+    
+    // UI Reset
+    document.getElementById('radioSeeker').value = 0;
+    document.getElementById('radioTimeCurrent').textContent = "0:00";
+    document.getElementById('radioTimeTotal').textContent = "-:--";
+}
+
+function toggleRadioPlay() {
+    if (isRadioPlaying) {
+        pauseRadio();
+    } else {
+        playRadio();
+    }
+}
+
+function playRadio() {
+    if (radioPlaylist.length === 0) return;
+    
+    // Reclaim hardware audio focus (iOS fix)
+    if (typeof audioCtx !== 'undefined' && audioCtx.state !== 'running') {
+        audioCtx.resume();
+    }
+    
+    radioAudio.play().then(() => {
+        isRadioPlaying = true;
+        radioAutoSkipCount = 0; // Reset error loop counter
+        document.getElementById('radioPlayIcon').setAttribute('d', 'M6 19h4V5H6v14zm8-14v14h4V5h-4z'); // Pause Icon
+        document.getElementById('radioArt').classList.add('radio-playing-art');
+    }).catch(err => {
+        // Will be caught by 'error' listener to auto-skip
+    });
+}
+
+function pauseRadio() {
+    radioAudio.pause();
+    isRadioPlaying = false;
+    document.getElementById('radioPlayIcon').setAttribute('d', 'M8 5v14l11-7z'); // Play Icon
+    document.getElementById('radioArt').classList.remove('radio-playing-art');
+}
+
+function handleRadioEnded() {
+    if (radioRepeatMode === 2) {
+        radioAudio.currentTime = 0;
+        playRadio();
+    } else {
+        nextRadioTrack(true);
+    }
+}
+
+function nextRadioTrack(autoSkip = false) {
+    currentRadioIndex++;
+    
+    if (currentRadioIndex >= radioPlaylist.length) {
+        if (radioRepeatMode === 1 || autoSkip) {
+            currentRadioIndex = 0; // Loop to start
+        } else {
+            currentRadioIndex = 0;
+            loadRadioTrack(currentRadioIndex);
+            pauseRadio();
+            return;
+        }
+    }
+    
+    loadRadioTrack(currentRadioIndex);
+    if (isRadioPlaying || autoSkip) playRadio();
+}
+
+function prevRadioTrack() {
+    // If we are more than 3 seconds in, just restart the track
+    if (radioAudio.currentTime > 3) {
+        radioAudio.currentTime = 0;
+        return;
+    }
+    
+    currentRadioIndex--;
+    if (currentRadioIndex < 0) {
+        currentRadioIndex = radioPlaylist.length - 1;
+    }
+    
+    loadRadioTrack(currentRadioIndex);
+    if (isRadioPlaying) playRadio();
+}
+
+// Controls Logic
+function toggleRadioShuffle() {
+    radioShuffleOn = !radioShuffleOn;
+    const btn = document.getElementById('radioShuffleBtn');
+    
+    if (radioShuffleOn) {
+        btn.classList.add('active');
+        shuffleRadioList();
+    } else {
+        btn.classList.remove('active');
+        // Unshuffle but keep current track playing
+        const currentTrack = radioPlaylist[currentRadioIndex];
+        radioPlaylist = [...radioOriginalList];
+        currentRadioIndex = radioPlaylist.findIndex(t => t.url === currentTrack.url);
+    }
+}
+
+function shuffleRadioList() {
+    const currentTrack = radioPlaylist[currentRadioIndex];
+    
+    for (let i = radioPlaylist.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [radioPlaylist[i], radioPlaylist[j]] = [radioPlaylist[j], radioPlaylist[i]];
+    }
+    // Force current track to index 0 so playback doesn't jump
+    if (currentTrack) {
+        const newIndex = radioPlaylist.findIndex(t => t.url === currentTrack.url);
+        [radioPlaylist[0], radioPlaylist[newIndex]] = [radioPlaylist[newIndex], radioPlaylist[0]];
+        currentRadioIndex = 0;
+    }
+}
+
+function toggleRadioRepeat() {
+    radioRepeatMode = (radioRepeatMode + 1) % 3;
+    const btn = document.getElementById('radioRepeatBtn');
+    
+    if (radioRepeatMode === 0) {
+        btn.classList.remove('active');
+        btn.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"></path></svg>`;
+    } else if (radioRepeatMode === 1) {
+        btn.classList.add('active');
+        btn.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"></path></svg>`;
+    } else {
+        btn.classList.add('active');
+        // Repeat One Icon
+        btn.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2.5V15h3v-4H9.5v1.5h1.5v3H13z"></path></svg>`;
+    }
+}
+
+// Scrubber / Progress Bar Logic
+function updateRadioProgress() {
+    if (isNaN(radioAudio.duration)) return;
+    
+    const seeker = document.getElementById('radioSeeker');
+    seeker.max = radioAudio.duration;
+    seeker.value = radioAudio.currentTime;
+    
+    document.getElementById('radioTimeCurrent').textContent = formatTime(radioAudio.currentTime);
+    document.getElementById('radioTimeTotal').textContent = formatTime(radioAudio.duration);
+}
+
+document.getElementById('radioSeeker').addEventListener('input', (e) => {
+    radioAudio.currentTime = e.target.value;
+});
+
+function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
